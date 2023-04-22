@@ -4,7 +4,7 @@ import hydra
 from omegaconf import DictConfig
 dotenv.load_dotenv(override=True)
 
-@hydra.main(config_path="configs/feat_extract/", config_name="feat_extract.yaml")
+@hydra.main(config_path="configs/feat_extract/", config_name="feat_extract.yaml", version_base='1.3')
 def main(config: DictConfig):
     module = importlib.import_module(config._target_)
     module.create_csv(**dict(config.params))
