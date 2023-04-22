@@ -5,7 +5,6 @@
 import torch.nn as nn
 from torch.nn import functional as F
 from .utils_resnet import resnet18, resnet34
-from pytorch_metric_learning.utils import common_functions
 
 class Resnet18Triplet(nn.Module):
     """Constructs a ResNet-18 model for FaceNet training using triplet loss.
@@ -22,7 +21,7 @@ class Resnet18Triplet(nn.Module):
 
         # Output
         self.input_features_fc_layer = self.model.fc.in_features
-        self.model.fc = common_functions.Identity()
+        self.model.fc = nn.Identity()
 
     def forward(self, images):
         """Forward pass to output the embedding vector (feature vector) after l2-normalization."""
@@ -46,7 +45,7 @@ class Resnet34Triplet(nn.Module):
 
         # Output
         self.input_features_fc_layer = self.model.fc.in_features
-        self.model.fc = common_functions.Identity()
+        self.model.fc = nn.Identity()
 
     def forward(self, images):
         """Forward pass to output the embedding vector (feature vector) after l2-normalization."""
