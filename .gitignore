@@ -3,3 +3,6 @@ data/*
 launch.json
 outputs/*
 *__pycache__
+*.yaml
+*.log
+logs/*

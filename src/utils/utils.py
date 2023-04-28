@@ -6,6 +6,7 @@ import pytorch_lightning as pl
 import wandb
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.loggers.wandb import WandbLogger
+from pytorch_lightning.loggers.logger import Logger
 from rich import print
 from rich.syntax import Syntax
 from rich.tree import Tree
@@ -105,7 +106,7 @@ def log_hyperparameters(
     datamodule: pl.LightningDataModule,
     trainer: pl.Trainer,
     callbacks: List[pl.Callback],
-    logger: List[pl.loggers.LightningLoggerBase],
+    logger: List[Logger],
 ) -> None:
     """This method controls which parameters from Hydra config are saved by Lightning loggers.
 
@@ -119,7 +120,7 @@ def log_hyperparameters(
         datamodule (pl.LightningDataModule): [description]
         trainer (pl.Trainer): [description]
         callbacks (List[pl.Callback]): [description]
-        logger (List[pl.loggers.LightningLoggerBase]): [description]
+        logger (List[Logger]): [description]
     """
 
     hparams = {}
@@ -166,7 +167,7 @@ def finish(
     datamodule: pl.LightningDataModule,
     trainer: pl.Trainer,
     callbacks: List[pl.Callback],
-    logger: List[pl.loggers.LightningLoggerBase],
+    logger: List[Logger],
 ) -> None:
     """Makes sure everything closed properly.
 
@@ -176,7 +177,7 @@ def finish(
         datamodule (pl.LightningDataModule): [description]
         trainer (pl.Trainer): [description]
         callbacks (List[pl.Callback]): [description]
-        logger (List[pl.loggers.LightningLoggerBase]): [description]
+        logger (List[Logger]): [description]
     """
 
     # without this sweeps with wandb logger might crash!

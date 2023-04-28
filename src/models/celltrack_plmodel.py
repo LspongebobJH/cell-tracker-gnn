@@ -35,6 +35,8 @@ class CellTrackLitModel(LightningModule):
         **kwargs
     ):
         super().__init__()
+        self.train_loss_outputs = []
+        self.valid_loss_outputs = []
 
         # this line ensures params passed to LightningModule will be saved to ckpt
         # it also allows to access params with 'self.hparams' attribute
@@ -97,6 +99,7 @@ class CellTrackLitModel(LightningModule):
 
     def training_step(self, batch: Any, batch_idx: int):
         loss, preds, targets = self.step(batch)
+        self.train_loss_outputs.append(loss)
 
         # log train metrics
         preds_sum, tar_sum = self.train_PredCount(preds), self.train_TarCount(targets)
@@ -114,9 +117,9 @@ class CellTrackLitModel(LightningModule):
         # remember to always return loss from training_step, or else backpropagation will fail!
         return {"loss": loss}
 
-    def training_epoch_end(self, outputs: List[Any]):
-        avg_loss = torch.stack([x['loss'] for x in outputs]).mean().to(self.device)
-        self.logger[0].experiment.add_scalars('loss_epoch', {'train': avg_loss}, global_step=self.current_epoch)
+    def on_train_epoch_end(self):
+        avg_loss = torch.stack(self.train_loss_outputs).mean().to(self.device)
+        self.logger.experiment.add_scalars('loss_epoch', {'train': avg_loss}, global_step=self.current_epoch)
 
         # log best so far train acc and train loss
         self.metric_hist["train/acc"].append(self.trainer.callback_metrics["train/acc"])
@@ -125,18 +128,20 @@ class CellTrackLitModel(LightningModule):
         self.log("train/loss_best", min(self.metric_hist["train/loss"]), prog_bar=False)
 
         acc, prec, rec = self.trClassMetric.compute()
-        self.logger[0].experiment.add_scalar('train/acc_epoch', acc, self.current_epoch)
-        self.logger[0].experiment.add_scalar('train/prec_epoch', prec, self.current_epoch)
-        self.logger[0].experiment.add_scalar('train/recall_epoch', rec, self.current_epoch)
-        self.logger[0].experiment.add_scalar('train/preds_sum_epoch', self.train_PredCount.compute(), self.current_epoch)
-        self.logger[0].experiment.add_scalar('train/tar_sum_epoch', self.train_TarCount.compute(), self.current_epoch)
+        self.logger.experiment.add_scalar('train/acc_epoch', acc, self.current_epoch)
+        self.logger.experiment.add_scalar('train/prec_epoch', prec, self.current_epoch)
+        self.logger.experiment.add_scalar('train/recall_epoch', rec, self.current_epoch)
+        self.logger.experiment.add_scalar('train/preds_sum_epoch', self.train_PredCount.compute(), self.current_epoch)
+        self.logger.experiment.add_scalar('train/tar_sum_epoch', self.train_TarCount.compute(), self.current_epoch)
 
         self.trClassMetric.reset()
         self.train_PredCount.reset()
         self.train_TarCount.reset()
+        self.train_loss_outputs.clear()
 
     def validation_step(self, batch: Any, batch_idx: int):
         loss, preds, targets = self.step(batch)
+        self.valid_loss_outputs.append(loss)
 
         # log val metrics
         preds_sum, tar_sum = self.val_PredCount(preds), self.val_TarCount(targets)
@@ -150,9 +155,9 @@ class CellTrackLitModel(LightningModule):
 
         return {"loss": loss}
 
-    def validation_epoch_end(self, outputs: List[Any]):
-        avg_loss = torch.stack([x['loss'] for x in outputs]).mean().to(self.device)
-        self.logger[0].experiment.add_scalars('loss_epoch', {'val': avg_loss}, global_step=self.current_epoch)
+    def on_validation_epoch_end(self):
+        avg_loss = torch.stack(self.valid_loss_outputs).mean().to(self.device)
+        self.logger.experiment.add_scalars('loss_epoch', {'val': avg_loss}, global_step=self.current_epoch)
 
         # log best so far val acc and val loss
         self.metric_hist["val/acc"].append(self.trainer.callback_metrics["val/acc"])
@@ -160,15 +165,16 @@ class CellTrackLitModel(LightningModule):
         self.log("val/acc_best", max(self.metric_hist["val/acc"]), prog_bar=False)
         self.log("val/loss_best", min(self.metric_hist["val/loss"]), prog_bar=False)
         acc, prec, rec = self.valClassMetric.compute()
-        self.logger[0].experiment.add_scalar('val/acc_epoch',       acc, self.current_epoch)
-        self.logger[0].experiment.add_scalar('val/prec_epoch',      prec, self.current_epoch)
-        self.logger[0].experiment.add_scalar('val/recall_epoch',    rec, self.current_epoch)
-        self.logger[0].experiment.add_scalar('val/preds_sum_epoch', self.val_PredCount.compute(), self.current_epoch)
-        self.logger[0].experiment.add_scalar('val/tar_sum_epoch',   self.val_TarCount.compute(), self.current_epoch)
+        self.logger.experiment.add_scalar('val/acc_epoch',       acc, self.current_epoch)
+        self.logger.experiment.add_scalar('val/prec_epoch',      prec, self.current_epoch)
+        self.logger.experiment.add_scalar('val/recall_epoch',    rec, self.current_epoch)
+        self.logger.experiment.add_scalar('val/preds_sum_epoch', self.val_PredCount.compute(), self.current_epoch)
+        self.logger.experiment.add_scalar('val/tar_sum_epoch',   self.val_TarCount.compute(), self.current_epoch)
 
         self.valClassMetric.reset()
         self.val_PredCount.reset()
         self.val_TarCount.reset()
+        self.valid_loss_outputs.clear()
 
     def test_step(self, batch: Any, batch_idx: int):
         loss, preds, targets = self.step(batch)
@@ -185,8 +191,9 @@ class CellTrackLitModel(LightningModule):
 
         return {"loss": loss, "preds": preds, "targets": targets}
 
-    def test_epoch_end(self, outputs: List[Any]):
+    def on_test_epoch_end(self):
         acc, prec, rec = self.testClassMetric.compute()
+        
         TP = self.testClassMetric.TP
         FP = self.testClassMetric.FP
         TN = self.testClassMetric.TN

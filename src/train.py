@@ -2,7 +2,7 @@ import logging
 from typing import List, Optional
 
 from pytorch_lightning import LightningModule, LightningDataModule, Callback, Trainer
-from pytorch_lightning.loggers import LightningLoggerBase
+from pytorch_lightning.loggers.logger import Logger
 from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning import seed_everything
 
@@ -46,7 +46,7 @@ def train(config: DictConfig) -> Optional[float]:
                 callbacks.append(hydra.utils.instantiate(cb_conf))
 
     # Init Lightning loggers
-    logger: List[LightningLoggerBase] = []
+    logger: List[Logger] = []
     if "logger" in config:
         for _, lg_conf in config["logger"].items():
             if "_target_" in lg_conf:
@@ -81,7 +81,7 @@ def train(config: DictConfig) -> Optional[float]:
     # Evaluate model on test set after training
     if not config.trainer.get("fast_dev_run"):
         log.info("Starting testing!")
-        trainer.test()
+        trainer.test(model=model, datamodule=datamodule)
 
     # Make sure everything closed properly
     log.info("Finalizing!")
