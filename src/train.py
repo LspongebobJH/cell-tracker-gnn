@@ -25,6 +25,12 @@ def train(config: DictConfig) -> Optional[float]:
         Optional[float]: Metric score for hyperparameter optimization.
     """
 
+    ########################################
+    ########################################
+    ######### lightning config #############
+    ########################################
+    ########################################
+
     # Set seed for random number generators in pytorch, numpy and python.random
     if "seed" in config:
         seed_everything(config.seed, workers=True)
@@ -74,6 +80,12 @@ def train(config: DictConfig) -> Optional[float]:
         logger=logger,
     )
 
+    ########################################
+    ########################################
+    ##### model training and testing #######
+    ########################################
+    ########################################
+
     # Train the model
     log.info("Starting training!")
     trainer.fit(model=model, datamodule=datamodule)
@@ -82,6 +94,12 @@ def train(config: DictConfig) -> Optional[float]:
     if not config.trainer.get("fast_dev_run"):
         log.info("Starting testing!")
         trainer.test(model=model, datamodule=datamodule)
+
+    ########################################
+    ########################################
+    ######### lightning config #############
+    ########################################
+    ########################################
 
     # Make sure everything closed properly
     log.info("Finalizing!")
