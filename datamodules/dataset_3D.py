@@ -10,7 +10,11 @@ import pandas as pd
 from skimage import io
 import cv2
 import warnings
+from scipy.ndimage import grey_erosion
+from scipy.ndimage.morphology import grey_dilation
 from hydra.utils import get_original_cwd
+
+
 def my_imshow(img, title_str='', cmap='gray'):
     import matplotlib.pyplot as plt
     plt.figure()
@@ -25,26 +29,16 @@ class ImgDataset(Dataset):
                  deviation,
                  curr_seq,
                  type_data,
-
                  data_dir_img: str,
                  normalize_type: str,
                  data_dir_mask: str,
                  subdir_mask: str,
                  dir_csv: str,
                  num_sequences,
-                 is_3d: bool = False,
-                 sequences_names: list = None,
-                 start_index=1,
+                 is_3d: bool = True,
                  train_val_test_split=[80, 10, 10],
                  type_img: str = 'tif',
                  transform: Optional[Callable] = None):
-
-
-        dir_csv = os.path.join(get_original_cwd(), dir_csv) if dir_csv.startswith('./') else dir_csv
-        data_dir_mask = os.path.join(get_original_cwd(), data_dir_mask) if data_dir_mask.startswith('./') else data_dir_mask
-        data_dir_img = os.path.join(get_original_cwd(), data_dir_img) if data_dir_img.startswith('./') else data_dir_img
-
-        self.sequences_names = sequences_names
         self.type_data = type_data
         self.split = split = train_val_test_split
         self.num_sequences = num_sequences
@@ -63,14 +57,9 @@ class ImgDataset(Dataset):
         # path to csv
         max_cell_id = 0
         for seq in range(self.num_sequences):
-            if sequences_names is None:
-                curr_seq_int = curr_seq if self.num_sequences == 1 else seq + start_index
-                curr_seq_str = "%02d" % curr_seq_int
-            else:
-                curr_seq_int = curr_seq if self.num_sequences == 1 else seq + start_index
-                curr_seq_str = sequences_names[seq]
 
-
+            curr_seq_int = curr_seq if self.num_sequences == 1 else seq + 1
+            curr_seq_str = "%02d" % curr_seq_int
             dir_csv_curr = osp.join(dir_csv, curr_seq_str)
             dir_csv_curr = osp.join(dir_csv_curr, "csv")
             # read csv
@@ -79,7 +68,7 @@ class ImgDataset(Dataset):
             curr_df_cells = pd.concat(temp_data, axis=0).reset_index(drop=True)
             self.org_df_cells.append(curr_df_cells)
 
-            if num_sequences > start_index and curr_seq_int > start_index:
+            if num_sequences > 1 and curr_seq_int > 1:
                 curr_df_cells.id = curr_df_cells.id + max_cell_id
 
             max_cell_id = np.max(curr_df_cells.id)
@@ -90,8 +79,18 @@ class ImgDataset(Dataset):
             # read images and masks
             curr_images = [os.path.join(dir_img, fname) for fname in sorted(os.listdir(dir_img)) if type_img in fname]
             curr_masks = [os.path.join(dir_masks, fname) for fname in sorted(os.listdir(dir_masks)) if type_img in fname]
-            assert len(curr_images) == len(curr_masks)
 
+            if len(curr_images) != len(curr_masks):
+                min_frames = min(len(curr_images), len(curr_masks))
+                curr_images = curr_images[:min_frames]
+                curr_masks = curr_masks[:min_frames]
+                print(
+                    f"Pay attention! the images amd mask are not with the same number {len(curr_images)} != {len(curr_masks)} ")
+                for img_path, seg_path in zip(curr_images[:min_frames], curr_masks[:min_frames]):
+                    im_num, mask_num = img_path.split(".")[-2][-3:], seg_path.split(".")[-2][-3:]
+                    assert im_num == mask_num, f"Image number ({im_num}) is not equal to mask number ({mask_num})"
+
+            assert len(curr_images) == len(curr_masks)
 
             if self.deviation == 'with_overlap':
                 train_val_test_split = np.array(split)
@@ -136,7 +135,7 @@ class ImgDataset(Dataset):
         self.transform = transform
         self.is_3d = is_3d
         self.normalize_type = normalize_type
-        if self.normalize_type == 'MinMax_all' or (self.normalize_type == 'regular' and (pad_value is None or norm_value is None)):
+        if self.normalize_type == 'regular' and (pad_value is None or norm_value is None):
             self.find_min_max()
         else:
             path_img = curr_images[0]
@@ -153,6 +152,8 @@ class ImgDataset(Dataset):
         elif norm_value == 'Max':
             if self.img_dtype == 'uint16':
                 self.norm_value = 2 ** 16 - 1
+            elif self.img_dtype == 'uint8':
+                self.norm_value = 2 ** 8 - 1
             else:
                 assert False, "Not supported type"
         elif isinstance(norm_value, int):
@@ -169,15 +170,8 @@ class ImgDataset(Dataset):
     def find_min_max(self):
         self.min_list = []
         self.max_list = []
-        flag_min = False
-        flag_max = False
-
-        if max([len(self.images[seq]) for seq in range(self.num_sequences)]) == 0:
-            print(f"Debug: all {self.type_data}")
-            return
-
-        for seq in range(self.num_sequences):
-            curr_images = self.images[seq]
+        for curr_sequence in range(self.num_sequences):
+            curr_images = self.images[curr_sequence]
             min_list_seq = []
             max_list_seq = []
             for img_path in curr_images:
@@ -186,18 +180,8 @@ class ImgDataset(Dataset):
                 max_list_seq.append(img.max())
             min_np_seq = np.array(min_list_seq)
             max_np_seq = np.array(max_list_seq)
-            if len(min_list_seq) > 0:
-                flag_min = True
-                self.min_list.append(min_np_seq.min())
-            if len(max_list_seq) > 0:
-                flag_max = True
-                self.max_list.append(max_np_seq.max())
-        if flag_min:
-            self.min_all = np.array(self.min_list).min()
-            print(f"{self.type_data}: ,min: {self.min_all}")
-        if flag_max:
-            self.max_all = np.array(self.max_list).max()
-            print(f"{self.type_data}: ,max: {self.max_all}")
+            self.min_list.append(int(min_np_seq.min()))
+            self.max_list.append(int(max_np_seq.max()))
         self.img_dtype = img.dtype
 
     def __getitem__(self, idx: int):
@@ -224,6 +208,7 @@ class ImgDataset(Dataset):
 
         anchor_cell_frame_ind = int(anchor_cell_prop.frame_num)
         anchor_cell_frame_ind = int(np.where(frames == anchor_cell_frame_ind)[0])
+
         anchor_cell_id = int(anchor_cell_prop.id)
         anchor_cell_id_real = anchor_cell_id - max_cell_id
 
@@ -233,12 +218,12 @@ class ImgDataset(Dataset):
         bb_anchor = anchor_cell_prop[self.cols].values.squeeze().astype('int32')
         anchor_img_patch = self.crop_norm_padding(image_curr, mask_curr, anchor_cell_id_real, bb_anchor, pad_value)
 
-        min_curr = anchor_img_patch.min()
-        max_curr = anchor_img_patch.max()
+        min_all = anchor_img_patch.min()
+        max_all = anchor_img_patch.max()
 
         anchor_img_patch = torch.from_numpy(anchor_img_patch).float()
 
-        assert min_curr >= 0 and max_curr <= 1.0, F"The values [{min_curr}, {max_curr}] are not in the proper range [0, 1]"
+        assert min_all >= 0 and max_all <= 1.0, F"The values [{min_all}, {max_all}] are not in the proper range [0, 1]"
 
         return anchor_img_patch, anchor_cell_id
 
@@ -261,38 +246,38 @@ class ImgDataset(Dataset):
             print("neg sample is all zeros")
             print("neg sample is all zeros")
             print("neg sample is all zeros")
-
-        if not (self.normalize_type == 'MinMax_all'):
-            img_patch[msk_patch] = pad_value
+        img_patch[msk_patch] = pad_value
         img_patch = img_patch.astype(np.float32)
         if self.normalize_type == 'regular':
             img_patch = self.padding(img_patch, pad_value)[None, ...] / self.norm_value
             img = img_patch
-        elif self.normalize_type == 'MinMax_all':
-            assert img_patch.shape == (self.curr_roi['row'], self.curr_roi['col']), \
-                f"Problem! {img_patch.shape} should be {(self.curr_roi['row'], self.curr_roi['col'])}"
-            img_patch = (img_patch - self.min_all) / (self.max_all - self.min_all)
-            img = img_patch.squeeze()[None, ...]
         elif self.normalize_type == 'MinMaxCell':
             not_msk_patch = np.logical_not(msk_patch)
             img_patch[not_msk_patch] = (img_patch[not_msk_patch] - self.min_cell_curr) / (self.max_cell_curr - self.min_cell_curr)
             img = self.padding(img_patch, pad_value)[None, ...]
         else:
             assert False, "Not supported this type of normalization"
-
         return img
 
     def padding(self, img, pad_val):
-        assert not self.is_3d, 'this function is used for 2D right now'
+        assert self.is_3d, 'this function is used for 3D'
         desired_size_row = self.curr_roi['row']
         desired_size_col = self.curr_roi['col']
-        delta_row = desired_size_row - img.shape[0]
-        delta_col = desired_size_col - img.shape[1]
+        desired_size_depth = self.curr_roi['depth']
+
+        delta_depth = desired_size_depth - img.shape[0]
+        delta_row = desired_size_row - img.shape[1]
+        delta_col = desired_size_col - img.shape[2]
+
+        pad_depth = delta_depth // 2
         pad_top = delta_row // 2
         pad_left = delta_col // 2
 
-        image = cv2.copyMakeBorder(img, pad_top, delta_row - pad_top, pad_left, delta_col - pad_left,
-                                   cv2.BORDER_CONSTANT, value=pad_val)
+        image = np.pad(img,
+                       ((pad_depth, delta_depth - pad_depth),
+                        (pad_top, delta_row - pad_top),
+                        (pad_left, delta_col - pad_left)),
+                       'constant', constant_values=np.ones((3, 2)) * pad_val)
 
         return image
 
@@ -319,6 +304,8 @@ class ImgDataset(Dataset):
             bb_feat = self.org_df_cells[curr_sequence].loc[:, self.cols]
             max_row = max(max_row, np.abs(bb_feat.min_row_bb.values - bb_feat.max_row_bb.values).max())
             max_col = max(max_col, np.abs(bb_feat.min_col_bb.values - bb_feat.max_col_bb.values).max())
+            if self.is_3d:
+                max_depth = max(max_depth, np.abs(bb_feat.min_depth_bb.values - bb_feat.max_depth_bb.values).max())
 
             intensity = self.org_df_cells[curr_sequence].loc[:, ["max_intensity", "min_intensity"]]
             self.min_cell.append(intensity.min_intensity.min())
@@ -327,16 +314,11 @@ class ImgDataset(Dataset):
             self.targets.append(self.df_cells[curr_sequence].loc[:, ['id']].values.squeeze())
             self.frames_for_sampler.append(self.df_cells[curr_sequence].loc[:, ['frame_num']].values.squeeze())
 
-            if self.is_3d:
-                max_depth = max(max_depth, np.abs(bb_feat.min_depth_bb.values - bb_feat.max_depth_bb.values).max())
-
         self.targets = np.concatenate(self.targets, axis=0).tolist()
         self.frames_for_sampler = np.concatenate(self.frames_for_sampler, axis=0).tolist()
         self.curr_roi = {'row': max_row, 'col': max_col}
         if self.is_3d:
             self.curr_roi['depth'] = max_depth
-
-        print(f"ROI: {self.curr_roi}")
 
     def __len__(self):
         total_num = 0
@@ -346,4 +328,3 @@ class ImgDataset(Dataset):
             total_num += curr_df.shape[0]
             self.cummulative_list.append(total_num)
         return total_num
-

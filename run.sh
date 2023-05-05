@@ -44,10 +44,6 @@ export HYDRA_FULL_ERROR=1
 # params.seg_dir='_GT/TRA' \
 # params.basic=True
 
-python run_train_metric_learning.py \
-dataset.kwargs.data_dir_img="./data/CTC/Training/Fluo-N3DH-CE" \
-dataset.kwargs.data_dir_mask="./data/CTC/Training/Fluo-N3DH-CE" \
-dataset.kwargs.dir_csv="./data/basic_features/Fluo-N3DH-CE" \
-dataset.kwargs.subdir_mask='GT/TRA'
+python run_train_metric_learning.py --normalized_feat --shorter --avg_of_avgs --num_epochs 2
 
 

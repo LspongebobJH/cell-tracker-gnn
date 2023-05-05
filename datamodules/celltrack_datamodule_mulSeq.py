@@ -4,7 +4,7 @@ from pytorch_lightning import LightningDataModule
 from torch.utils.data import Subset
 
 from torch_geometric.data import DataLoader
-from src.datamodules.datasets.graph_dataset import CellTrackDataset
+from .graph_dataset import CellTrackDataset
 
 
 def my_split(dataset, lengths, seq_len, sampler_type):

@@ -9,18 +9,15 @@ import tqdm
 import pprint
 from datetime import datetime
 
-import importlib
-import hydra
-from omegaconf import DictConfig
-
-from src_metric_learning.Data.sampler import MPerClassSampler_weighted
+from datamodules.sampler import MPerClassSampler_weighted
+from datamodules.dataset_3D import ImgDataset
+from modules.resnet_3d.resnet import set_model_architecture, MLP
 import os
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # specify which GPU(s) to be used
+import argparse
 
 def train(device,
          patch_based,
-         data_config,
          base_dir,
          model_name,
          embedding_dim,
@@ -37,13 +34,12 @@ def train(device,
          loss_gamma,
          epsilon_miner,
          shorter,
-         dataset_module,
+         patience,
          m_samples=4,
          avg_of_avgs=True,
          k="max_bin_count",
-         test_interval=1,
-         patience=20,
          normalized_feat=False,
+         **data_config
          ):
     model_folder = os.path.join(base_dir, "saved_models")
     logs_folder = os.path.join(base_dir, "logs")
@@ -51,10 +47,6 @@ def train(device,
 
     record_keeper, _, _ = logging_presets.get_record_keeper(logs_folder, tensorboard_folder)
     hooks = logging_presets.get_hook_container(record_keeper)
-    if model_name == 'resnet18_3d':
-        from src_metric_learning.modules.resnet_3d.resnet import set_model_architecture, MLP
-    else:
-        from src_metric_learning.modules.resnet_2d.resnet import set_model_architecture, MLP
 
     trunk = set_model_architecture(model_name)
     trunk_output_size = trunk.input_features_fc_layer
@@ -66,9 +58,9 @@ def train(device,
     trunk_optimizer = torch.optim.Adam(trunk.parameters(), lr=lr_trunk, weight_decay=weight_decay)
     embedder_optimizer = torch.optim.Adam(embedder.parameters(), lr=lr_embedder, weight_decay=weight_decay)
 
-    train_dataset = dataset_module.ImgDataset(**data_config, type_data='train')
-    val_dataset = dataset_module.ImgDataset(**data_config, type_data='valid')
-    test_data = dataset_module.ImgDataset(**data_config, type_data='test')
+    train_dataset = ImgDataset(**data_config, type_data='train')
+    val_dataset = ImgDataset(**data_config, type_data='valid')
+    test_data = ImgDataset(**data_config, type_data='test')
 
     print(train_dataset.curr_roi)
     print(f"train_dataset length:{len(train_dataset)}")
@@ -149,9 +141,8 @@ def train(device,
 
     end_of_epoch_hook = hooks.end_of_epoch_hook(tester,
                                                 dataset_dict,
-                                                model_folder)
-#                                                 test_interval=test_interval,
-#                                                 patience=patience)
+                                                model_folder,
+                                                patience=patience)
 
     trainer = trainers.MetricLossOnly(models=models,
                                       optimizers=optimizers,
@@ -207,38 +198,72 @@ def train(device,
     torch.save(dict_params, 'all_params.pth')
     print(f'save: {save_path}')
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
 
-def run(config, data_config, dataset_module, exp_name, patch_based):
+    parser.add_argument('--exp_name', type=str, default='3D_SIM_MultiSimilarityLoss')
+    parser.add_argument('--model_name', type=str, default='resnet18_3d')
+    parser.add_argument('--embedding_dim', type=int, default=128)
+    parser.add_argument('--normalized_feat', action='store_true', default=False)
+    parser.add_argument('--dataset_dict_keys', nargs='+', type=str, default=['val'])
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--num_epochs', type=int, default=1000)
+    parser.add_argument('--num_workers', type=int, default=8)
+
+    parser.add_argument('--lr_trunk', type=float, default=0.00001)
+    parser.add_argument('--lr_embedder', type=float, default=0.0001)
+    parser.add_argument('--weight_decay', type=float, default=0.0001)
+
+    parser.add_argument('--loss_function', type=str, default='MultiSimilarityLoss')
+    parser.add_argument('--loss_distance', type=str, default='CosineSimilarity')
+    parser.add_argument('--loss_margin', type=float, default=0.25)
+    parser.add_argument('--loss_gamma', type=int, default=128)
+    parser.add_argument('--epsilon_miner', type=float, default=0.1)
+
+    parser.add_argument('--shorter', action='store_true', default=False)
+    parser.add_argument('--normalize_type', type=str, default='MinMaxCell')
+
+    parser.add_argument('--avg_of_avgs', action='store_true', default=False)
+    parser.add_argument('--k', type=str, default="max_bin_count")
+    parser.add_argument('--patience', type=int, default=25)
+
+    parser.add_argument('--pad_value', type=int, default=0)
+    parser.add_argument('--norm_value', type=int, default=0)
+    parser.add_argument('--train_val_test_split', nargs='+', default=[80, 20, 0])
+
+    parser.add_argument('--data_dir_img', type=str, default="./data/CTC/Training/Fluo-N3DH-CE")
+    parser.add_argument('--data_dir_mask', type=str, default="./data/CTC/Training/Fluo-N3DH-CE")
+    parser.add_argument('--subdir_mask', type=str, default='GT/TRA')
+    parser.add_argument('--dir_csv', type=str, default="./data/basic_features/Fluo-N3DH-CE")
+
+    parser.add_argument('--curr_seq', type=int, default=1)
+    parser.add_argument('--num_sequences', type=int, default=2)
+    parser.add_argument('--deviation', type=str, default='no_overlap')
+    args = parser.parse_args()
+
     datetime_object = str(datetime.now())
     datetime_object = datetime_object.split('.')[0].replace(':', '-').replace(' ', '/')
     print(f"start time: {datetime_object}")
-    base_dir = "logs_" + exp_name
+    base_dir = "logs_" + args.exp_name
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
 
     print("Config dictionary")
-    pprint.pprint(config, sort_dicts=False)
+    pprint.pprint(args, sort_dicts=False)
 
-    print("data_config dictionary")
-    pprint.pprint(data_config, sort_dicts=False)
+    config = vars(args)
+    config.pop('exp_name')
 
     train(device,
-          patch_based=patch_based,
-          dataset_module=dataset_module,
+          patch_based=False,
           base_dir=base_dir,
-          data_config=data_config,
-          **config)
+          **vars(args))
 
 
-@hydra.main(config_path="configs/metric_learning/", config_name="config_3D.yaml")
-def main(config: DictConfig):
-    dict_kwargs = config.kwargs
-    data_config = config.dataset.kwargs
-    target_dataset = config.dataset._target_
-    flag = 'MinMax_all' in data_config.normalize_type
-    dataset_module = importlib.import_module(target_dataset)
-    run(dict(dict_kwargs), dict(data_config), dataset_module, config.exp_name, patch_based=flag)
 
-if __name__ == "__main__":
-    main()
+
+
+
+
+
 

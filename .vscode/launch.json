@@ -23,13 +23,7 @@
             "justMyCode": true,
             "cwd": "/home/ubuntu/cell-tracker-gnn",
             "args": [
-                "params.input_images=./data/CTC/Training/Fluo-N3DH-CE",
-                "params.input_masks=./data/CTC/Training/Fluo-N3DH-CE",
-                "params.input_seg=./data/CTC/Training/Fluo-N3DH-CE",
-                "params.output_csv=./data/basic_features/",
-                "params.sequences=['01','02']",
-                "params.seg_dir=_GT/TRA",
-                "params.basic=True"
+                "--basic"
             ]
         },
 
@@ -62,10 +56,7 @@
             "justMyCode": false,
             "cwd": "/home/ubuntu/cell-tracker-gnn",
             "args": [
-                "dataset.kwargs.data_dir_img=./data/CTC/Training/Fluo-N2DH-SIM+",
-                "dataset.kwargs.data_dir_mask=./data/CTC/Training/Fluo-N2DH-SIM+",
-                "dataset.kwargs.dir_csv=./data/basic_features/Fluo-N2DH-SIM+",
-                "dataset.kwargs.subdir_mask=GT/TRA"
+               "--normalized_feat", "--shorter", "--avg_of_avgs", "--num_epochs", "1"
             ]
         },
 
