@@ -1,0 +1,86 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "/home/ubuntu/cell-tracker-gnn"
+        },
+
+        {
+            "name": "feat_extract",
+            "type": "python",
+            "request": "launch",
+            "program": "run_feat_extract.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "/home/ubuntu/cell-tracker-gnn",
+            "args": [
+                "params.input_images=./data/CTC/Training/Fluo-N3DH-CE",
+                "params.input_masks=./data/CTC/Training/Fluo-N3DH-CE",
+                "params.input_seg=./data/CTC/Training/Fluo-N3DH-CE",
+                "params.output_csv=./data/basic_features/",
+                "params.sequences=['01','02']",
+                "params.seg_dir=_GT/TRA",
+                "params.basic=True"
+            ]
+        },
+
+        {
+            "name": "feat_extract_2",
+            "type": "python",
+            "request": "launch",
+            "program": "run_feat_extract.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "/home/ubuntu/cell-tracker-gnn",
+            "args": [
+                "params.input_images=./data/CTC/Training/Fluo-N2DH-SIM+",
+                "params.input_masks=./data/CTC/Training/Fluo-N2DH-SIM+",
+                "params.input_seg=./data/CTC/Training/Fluo-N2DH-SIM+",
+                "params.output_csv=./data/ct_features/",
+                "params.sequences=['01','02']" ,
+                "params.seg_dir=_GT/TRA",
+                "params.basic=False",
+                "params.input_model=/home/ubuntu/cell-tracker-gnn/outputs/2023-04-22/13-26-13/all_params.pth"
+            ]
+        },
+
+        {
+            "name": "metric_learn",
+            "type": "python",
+            "request": "launch",
+            "program": "run_train_metric_learning.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "/home/ubuntu/cell-tracker-gnn",
+            "args": [
+                "dataset.kwargs.data_dir_img=./data/CTC/Training/Fluo-N2DH-SIM+",
+                "dataset.kwargs.data_dir_mask=./data/CTC/Training/Fluo-N2DH-SIM+",
+                "dataset.kwargs.dir_csv=./data/basic_features/Fluo-N2DH-SIM+",
+                "dataset.kwargs.subdir_mask=GT/TRA"
+            ]
+        },
+
+        {
+            "name": "cell_track",
+            "type": "python",
+            "request": "launch",
+            "program": "run.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "datamodule.dataset_params.main_path=./data/ct_features/Fluo-N2DH-SIM+",
+                "datamodule.dataset_params.exp_name=2D_SIM",
+                "datamodule.dataset_params.drop_feat=[]"
+            ]
+        },
+    ]
+}

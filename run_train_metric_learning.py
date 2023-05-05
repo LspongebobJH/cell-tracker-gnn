@@ -230,7 +230,7 @@ def run(config, data_config, dataset_module, exp_name, patch_based):
           **config)
 
 
-@hydra.main(config_path="configs/metric_learning/", config_name="config_2D.yaml")
+@hydra.main(config_path="configs/metric_learning/", config_name="config_3D.yaml")
 def main(config: DictConfig):
     dict_kwargs = config.kwargs
     data_config = config.dataset.kwargs

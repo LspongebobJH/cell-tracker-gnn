@@ -49,7 +49,7 @@ class TestDataset(Dataset):
                             if type_masks in fname]
 
         if len(self.images) != len(self.masks) or len(self.images) != len(self.results):
-            len_img, len_masks, len_res = min(len(self.images), len(self.masks), len(self.results))
+            len_img, len_masks, len_res = len(self.images), len(self.masks), len(self.results)
             min_frames = min(len(self.images), len(self.masks), len(self.results))
             assert min_frames > 0
             self.images = self.images[:min_frames]

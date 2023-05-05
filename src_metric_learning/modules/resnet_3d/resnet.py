@@ -22,7 +22,7 @@ class Resnet18_3D(nn.Module):
 
         # Output embedding
         self.input_features_fc_layer = self.model.fc.in_features
-        self.model.fc = common_functions.Identity() #nn.Linear(input_features_fc_layer, embedding_dimension, bias=False)
+        self.model.fc = nn.Identity() #nn.Linear(input_features_fc_layer, embedding_dimension, bias=False)
 
     def forward(self, images):
         """Forward pass to output the embedding vector (feature vector) after l2-normalization."""
@@ -47,7 +47,7 @@ class Resnet34_3D(nn.Module):
 
         # Output embedding
         self.input_features_fc_layer = self.model.fc.in_features
-        self.model.fc = common_functions.Identity() # nn.Linear(input_features_fc_layer, embedding_dimension, bias=False)
+        self.model.fc = nn.Identity() # nn.Linear(input_features_fc_layer, embedding_dimension, bias=False)
 
     def forward(self, images):
         """Forward pass to output the embedding vector (feature vector) after l2-normalization."""

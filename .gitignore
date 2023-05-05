@@ -1,6 +1,5 @@
 .venv/*
 data/*
-launch.json
 outputs/*
 *__pycache__
 *.yaml

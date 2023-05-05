@@ -32,6 +32,7 @@ def main(config: DictConfig):
         utils.print_config(config, resolve=True)
 
     # Train model
+
     return train(config)
 
 
