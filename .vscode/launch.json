@@ -56,7 +56,7 @@
             "justMyCode": false,
             "cwd": "/home/ubuntu/cell-tracker-gnn",
             "args": [
-               "--normalized_feat", "--shorter", "--avg_of_avgs", "--num_epochs", "1"
+               "--normalized_feat", "--shorter", "--avg_of_avgs", "--num_epochs", "2"
             ]
         },
 

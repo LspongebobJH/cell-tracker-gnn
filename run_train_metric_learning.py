@@ -28,10 +28,6 @@ def train(device,
          lr_trunk,
          lr_embedder,
          weight_decay,
-         loss_function,
-         loss_distance,
-         loss_margin,
-         loss_gamma,
          epsilon_miner,
          shorter,
          patience,
@@ -50,9 +46,8 @@ def train(device,
 
     trunk = set_model_architecture(model_name)
     trunk_output_size = trunk.input_features_fc_layer
-    trunk = torch.nn.DataParallel(trunk.to(device))
-    embedder = torch.nn.DataParallel(MLP([trunk_output_size, embedding_dim],
-                                         normalized_feat=normalized_feat).to(device))
+    trunk = trunk.to(device)
+    embedder = MLP([trunk_output_size, embedding_dim], normalized_feat=normalized_feat).to(device)
 
     # Set optimizers
     trunk_optimizer = torch.optim.Adam(trunk.parameters(), lr=lr_trunk, weight_decay=weight_decay)
@@ -67,30 +62,11 @@ def train(device,
     print(f"val_dataset length:{len(val_dataset)}")
     print(f"test_data length:{len(test_data)}")
 
-    assert set(train_dataset.targets).isdisjoint(set(val_dataset.targets))
-
     # Set the loss function AND the mining function
-    if loss_function == 'circle_loss':
-        print("use circle_loss")
-        loss = losses.CircleLoss(m=loss_margin, gamma=loss_gamma, distance=CosineSimilarity(), reducer=MeanReducer())
-        miner = miners.MultiSimilarityMiner(epsilon=epsilon_miner)
-    elif loss_function == 'MultiSimilarityLoss':
-        print("use MultiSimilarityLoss")
-        loss = losses.MultiSimilarityLoss(distance=CosineSimilarity(), reducer=MeanReducer())
-        miner = miners.MultiSimilarityMiner(epsilon=epsilon_miner)
-    elif loss_function == 'triplet_loss':
-        print("use triplet_loss")
-        if loss_distance == 'CosineSimilarity':
-            distance = distances.CosineSimilarity()
-        elif loss_distance == 'LpDistance':
-            distance = distances.LpDistance()
-        else:
-            assert False
-        reducer = reducers.ThresholdReducer(low=0)
-        loss = losses.TripletMarginLoss(margin=loss_margin, distance=distance, reducer=reducer)
-        miner = miners.TripletMarginMiner(margin=loss_margin, distance=distance, type_of_triplets="semihard")
-    else:
-        assert False
+    print("use MultiSimilarityLoss")
+    loss = losses.MultiSimilarityLoss(distance=CosineSimilarity(), reducer=MeanReducer())
+    miner = miners.MultiSimilarityMiner(epsilon=epsilon_miner)
+
     # Set the dataloader sampler
     sampler = MPerClassSampler_weighted(train_dataset.targets, frames=train_dataset.frames_for_sampler, m=m_samples,
                                         length_before_new_iter=len(train_dataset))
@@ -157,47 +133,6 @@ def train(device,
 
     trainer.train(num_epochs=num_epochs)
 
-    work_dir = os.getcwd()
-
-    save_model = os.path.join(work_dir, base_dir, "saved_models")
-    for file in os.listdir(save_model):
-        if file.startswith('trunk_best'):
-            trunk_ckpt_path = os.path.join(save_model, file)
-        if file.startswith('embedder_best'):
-            embedder_ckpt_path = os.path.join(save_model, file)
-
-    print(f"best trunk_ckpt: {trunk_ckpt_path}")
-    print(f"best embedder_ckpt: {embedder_ckpt_path}")
-    trunk_ckpt = torch.load(trunk_ckpt_path)
-    embedder_ckpt = torch.load(embedder_ckpt_path)
-
-    dict_params = {}
-    if patch_based:
-        assert val_dataset.min_all == train_dataset.min_all
-        assert val_dataset.max_all == train_dataset.max_all
-        dict_params['min_all'] = val_dataset.min_all
-        dict_params['max_all'] = val_dataset.max_all
-    else:
-
-        dict_params['min_cell'] = test_data.min_cell
-        dict_params['max_cell'] = test_data.max_cell
-        dict_params['pad_value'] = test_data.pad_value
-
-    dict_params['roi'] = test_data.curr_roi
-
-    # models params
-    dict_params['model_name'] = model_name
-    dict_params['mlp_dims'] = [trunk_output_size, embedding_dim]
-    dict_params['mlp_normalized_features'] = normalized_feat
-
-    # models state_dict
-    dict_params['trunk_state_dict'] = trunk_ckpt
-    dict_params['embedder_state_dict'] = embedder_ckpt
-
-    save_path = os.path.join(work_dir, 'all_params.pth')
-    torch.save(dict_params, 'all_params.pth')
-    print(f'save: {save_path}')
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
@@ -214,10 +149,6 @@ if __name__ == "__main__":
     parser.add_argument('--lr_embedder', type=float, default=0.0001)
     parser.add_argument('--weight_decay', type=float, default=0.0001)
 
-    parser.add_argument('--loss_function', type=str, default='MultiSimilarityLoss')
-    parser.add_argument('--loss_distance', type=str, default='CosineSimilarity')
-    parser.add_argument('--loss_margin', type=float, default=0.25)
-    parser.add_argument('--loss_gamma', type=int, default=128)
     parser.add_argument('--epsilon_miner', type=float, default=0.1)
 
     parser.add_argument('--shorter', action='store_true', default=False)
