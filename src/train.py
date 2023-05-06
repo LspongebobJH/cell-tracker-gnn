@@ -11,6 +11,8 @@ from omegaconf import DictConfig
 
 from src.utils import utils
 
+from datamodules.celltrack_datamodule_mulSeq import CellTrackDataModule
+
 log = logging.getLogger(__name__)
 
 
@@ -36,8 +38,7 @@ def train(config: DictConfig) -> Optional[float]:
         seed_everything(config.seed, workers=True)
 
     # Init Lightning datamodule
-    log.info(f"Instantiating datamodule <{config.datamodule._target_}>")
-    datamodule: LightningDataModule = hydra.utils.instantiate(config.datamodule)
+    datamodule = CellTrackDataModule(**config.datamodule)
 
     # Init Lightning model
     log.info(f"Instantiating model <{config.model._target_}>")
