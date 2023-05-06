@@ -17,7 +17,6 @@ import os
 import argparse
 
 def train(device,
-         patch_based,
          base_dir,
          model_name,
          embedding_dim,

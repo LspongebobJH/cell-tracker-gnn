@@ -44,7 +44,7 @@ export HYDRA_FULL_ERROR=1
 # params.seg_dir='_GT/TRA' \
 # params.basic=True
 
-python run_train_metric_learning.py --normalized_feat --shorter --avg_of_avgs --num_epochs 2 --batch_size 128 --num_workers 4 \
---lr_trunk 1e-3 --lr_embedder 1e-3
+python run_train_metric_learning.py --normalized_feat --shorter --avg_of_avgs --num_epochs 2 \
+--lr_trunk 1e-3 --lr_embedder 1e-3 --num_sequences 1
 
 
