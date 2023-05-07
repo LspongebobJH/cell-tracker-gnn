@@ -38,7 +38,8 @@ class ImgDataset(Dataset):
                  is_3d: bool = True,
                  train_val_test_split=[80, 10, 10],
                  type_img: str = 'tif',
-                 transform: Optional[Callable] = None):
+                 transform: Optional[Callable] = None, 
+                 **kwargs):
         self.type_data = type_data
         self.split = split = train_val_test_split
         self.num_sequences = num_sequences

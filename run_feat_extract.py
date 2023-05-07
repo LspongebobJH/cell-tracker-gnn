@@ -1,5 +1,5 @@
 import argparse
-from datamodules.preprocess_seq2graph_3D import create_csv
+from celltrack.datamodules.preprocess_seq2graph_3D import create_csv
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

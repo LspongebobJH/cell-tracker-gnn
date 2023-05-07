@@ -9,9 +9,9 @@ import tqdm
 import pprint
 from datetime import datetime
 
-from datamodules.sampler import MPerClassSampler_weighted
-from datamodules.dataset_3D import ImgDataset
-from modules.resnet_3d.resnet import set_model_architecture, MLP
+from celltrack.datamodules.sampler import MPerClassSampler_weighted
+from celltrack.datamodules.dataset_3D import ImgDataset
+from celltrack.modules.resnet_3d.resnet import set_model_architecture, MLP
 import os
 
 import argparse

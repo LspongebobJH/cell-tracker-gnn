@@ -35,17 +35,12 @@ export HYDRA_FULL_ERROR=1
 ########################################
 # 3d c elegans
 ########################################
-# python run_feat_extract.py \
-# params.input_images="./data/CTC/Training/Fluo-N3DH-CE" \
-# params.input_masks="./data/CTC/Training/Fluo-N3DH-CE" \
-# params.input_seg="./data/CTC/Training/Fluo-N3DH-CE" \
-# params.output_csv="./data/basic_features/" \
-# params.sequences=['01','02'] \
-# params.seg_dir='_GT/TRA' \
-# params.basic=True
+# python run_feat_extract.py --basic \
 
-python run_train_metric_learning.py --normalized_feat --shorter --avg_of_avgs \
---num_epochs 100 --patience 10 \
---lr_trunk 1e-4 --lr_embedder 1e-4 --num_sequences 1
+# python run_train_metric_learning.py --normalized_feat --shorter --avg_of_avgs \
+# --num_epochs 100 --patience 10 \
+# --lr_trunk 1e-4 --lr_embedder 1e-4 --num_sequences 1 --exp_name 0 --num_workers 12
+
+python run_feat_extract.py
 
 

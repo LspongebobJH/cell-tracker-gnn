@@ -9,7 +9,7 @@ from skimage.measure import regionprops
 from skimage import io
 from hydra.utils import get_original_cwd, to_absolute_path
 
-from src_metric_learning.modules.resnet_3d.resnet import set_model_architecture, MLP
+from ..modules.resnet_3d.resnet import set_model_architecture, MLP
 
 
 class TestDataset(Dataset):
@@ -19,9 +19,6 @@ class TestDataset(Dataset):
                  sec_path: str,
                  path_result: str,
                  type_img: str):
-        path = os.path.join(get_original_cwd(), path) if path.startswith('./') else path
-        path_masks = os.path.join(get_original_cwd(), path_masks) if path_masks.startswith('./') else path_masks
-        path_result = os.path.join(get_original_cwd(), path_result) if path_result.startswith('./') else path_result
 
         self.path = path
         self.sec_path = sec_path
