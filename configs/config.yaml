@@ -2,11 +2,11 @@
 
 # specify here default training configuration
 defaults:
-    - trainer: default_trainer.yaml # do not change
-    - model: celltrack_model_3d.yaml # can be changed
-    - datamodule: datamodule_multiSequence.yaml # can be changed
-    - callbacks: default_callbacks.yaml  # do not change
-    - logger: many_loggers.yaml  # do not change
+    - default_trainer.yaml # do not change
+    - celltrack_model_3d.yaml # can be changed
+    - datamodule_multiSequence.yaml # can be changed
+    - default_callbacks.yaml  # do not change
+    - many_loggers.yaml  # do not change
 
 one_hot: True
 separate_models: True
@@ -15,11 +15,14 @@ separate_models: True
 # hydra hijacks working directory by changing it to the current log directory,
 # so it's useful to have this path as a special variable
 # learn more here: https://hydra.cc/docs/next/tutorials/basic/running_your_app/working_directory
-work_dir: ${hydra:runtime.cwd}
+work_dir: /home/ubuntu/cell-tracker-gnn
 
+exp_name: #Please/insert/experiment/name
 
 # path to folder with data
 data_dir: ${work_dir}/data/
+log_dir: ${work_dir}/logs/logs_${exp_name}
+
 
 
 # use `python run.py debug=true` for easy debugging!

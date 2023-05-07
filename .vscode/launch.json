@@ -36,7 +36,8 @@
             "justMyCode": true,
             "cwd": "/home/ubuntu/cell-tracker-gnn",
             "args": [
-                "--sequences", "01"
+                "--sequences", "01", "--input_model", "/home/ubuntu/cell-tracker-gnn/logs/logs_0/all_params.pth", 
+                "--output_csv", "./data/ct_features/"
             ]
         },
 
@@ -49,7 +50,7 @@
             "justMyCode": false,
             "cwd": "/home/ubuntu/cell-tracker-gnn",
             "args": [
-               "--normalized_feat", "--shorter", "--avg_of_avgs", "--num_epochs", "2"
+               "--normalized_feat", "--shorter", "--avg_of_avgs", "--num_epochs", "2", "--exp_name", "0"
             ]
         },
 
@@ -61,9 +62,8 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "datamodule.dataset_params.main_path=./data/ct_features/Fluo-N3DH-CE",
-                "datamodule.dataset_params.exp_name=3D_SIM",
-                "datamodule.dataset_params.drop_feat=[]"
+                "exp_name='0'",
+                "datamodule.dataset_params.dirs_path.train=['01']",
             ]
         },
     ]

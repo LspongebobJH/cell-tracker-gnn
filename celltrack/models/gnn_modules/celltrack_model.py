@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 from torch.nn.modules.distance import CosineSimilarity
 
-from src.models.modules.mlp import MLP
-import src.models.modules.edge_mpnn as edge_mpnn
+from .mlp import MLP
+from . import edge_mpnn
 
 
 class CellTrack_Model(nn.Module):

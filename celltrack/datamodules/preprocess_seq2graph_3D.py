@@ -9,7 +9,7 @@ from skimage.measure import regionprops
 from skimage import io
 from hydra.utils import get_original_cwd, to_absolute_path
 
-from ..modules.resnet_3d.resnet import set_model_architecture, MLP
+from ..models.resnet_3d.resnet import set_model_architecture, MLP
 
 
 class TestDataset(Dataset):

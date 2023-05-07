@@ -22,6 +22,7 @@ class CellTrackDataset(InMemoryDataset):
                  main_path,
                  edge_feat_embed_dict,
                  normalize_all_cols,
+                 dim,
                  mul_vals=[2, 2, 2],
                  produce_gt='simple',
                  split='train',
@@ -46,8 +47,12 @@ class CellTrackDataset(InMemoryDataset):
         self.separate_models = separate_models
         self.save_stats = save_stats
         self.mul_vals = mul_vals
-        flag_2d = '2D' in exp_name
-        flag_3d = '3D' in exp_name
+        if dim == '2D':
+            flag_2d = True
+            flag_3d = False
+        else:
+            flag_2d = False
+            flag_3d = True
         assert not (flag_2d and flag_3d), "Please provide experiment name with only one detailed dimension (e.g. 2D/3D)"
         assert flag_2d or flag_3d, "Please provide experiment name with detailed dimension (e.g. 2D/3D)"
         self.is_3d = flag_3d and (not flag_2d)

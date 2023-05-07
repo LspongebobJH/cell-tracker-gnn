@@ -18,8 +18,8 @@ def my_split(dataset, lengths, seq_len, sampler_type):
     if sampler_type == 'from_both':
         print(f"sample using {sampler_type}")
         min_max = lengths[1] // 2
-        val_rand = seq_len[1] - min_max
-        # print(f"split according to the first sequence (len={seq_len[1]}) minus {min_max} "
+        val_rand = seq_len[0] - min_max
+        # print(f"split according to the first sequence (len={seq_len[0]}) minus {min_max} "
         #       f"meaning we do cyclic shift but remain in the end with half "
         #       f"of the len for validation ({min_max}) from each sequence")
         indices = np.roll(np.arange(sum(lengths)), val_rand)

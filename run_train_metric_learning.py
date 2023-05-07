@@ -11,7 +11,7 @@ from datetime import datetime
 
 from celltrack.datamodules.sampler import MPerClassSampler_weighted
 from celltrack.datamodules.dataset_3D import ImgDataset
-from celltrack.modules.resnet_3d.resnet import set_model_architecture, MLP
+from celltrack.models.resnet_3d.resnet import set_model_architecture, MLP
 import os
 
 import argparse
@@ -131,6 +131,41 @@ def train(device,
                                       end_of_epoch_hook=end_of_epoch_hook)
 
     trainer.train(num_epochs=num_epochs)
+    # TODO: when the number of epochs is too small, there may be no best checkpoint. Can fix?
+
+    log_dir = os.path.join(os.getcwd(), base_dir)
+
+    save_model = os.path.join(log_dir, "saved_models")
+    for file in os.listdir(save_model):
+        if file.startswith('trunk_best'):
+            trunk_ckpt_path = os.path.join(save_model, file)
+        if file.startswith('embedder_best'):
+            embedder_ckpt_path = os.path.join(save_model, file)
+
+    print(f"best trunk_ckpt: {trunk_ckpt_path}")
+    print(f"best embedder_ckpt: {embedder_ckpt_path}")
+    trunk_ckpt = torch.load(trunk_ckpt_path)
+    embedder_ckpt = torch.load(embedder_ckpt_path)
+
+    dict_params = {}
+    dict_params['min_cell'] = test_data.min_cell
+    dict_params['max_cell'] = test_data.max_cell
+    dict_params['pad_value'] = test_data.pad_value
+
+    dict_params['roi'] = test_data.curr_roi
+
+    # models params
+    dict_params['model_name'] = model_name
+    dict_params['mlp_dims'] = [trunk_output_size, embedding_dim]
+    dict_params['mlp_normalized_features'] = normalized_feat
+
+    # models state_dict
+    dict_params['trunk_state_dict'] = trunk_ckpt
+    dict_params['embedder_state_dict'] = embedder_ckpt
+
+    save_path = os.path.join(log_dir, 'all_params.pth')
+    torch.save(dict_params, save_path)
+    print(f'save: {save_path}')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -174,7 +209,7 @@ if __name__ == "__main__":
     datetime_object = str(datetime.now())
     datetime_object = datetime_object.split('.')[0].replace(':', '-').replace(' ', '/')
     print(f"start time: {datetime_object}")
-    base_dir = "logs_" + args.exp_name
+    base_dir = "logs/logs_" + args.exp_name
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
 
