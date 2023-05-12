@@ -57,7 +57,7 @@ class ImgDataset(Dataset):
         self.curr_sequence = curr_seq
         # path to csv
         max_cell_id = 0
-        for seq in range(self.num_sequences):
+        for seq in range(self.num_sequences): # NOTE: to combine different sequences into single one
 
             curr_seq_int = curr_seq if self.num_sequences == 1 else seq + 1
             curr_seq_str = "%02d" % curr_seq_int
@@ -82,11 +82,12 @@ class ImgDataset(Dataset):
             curr_masks = [os.path.join(dir_masks, fname) for fname in sorted(os.listdir(dir_masks)) if type_img in fname]
 
             if len(curr_images) != len(curr_masks):
-                min_frames = min(len(curr_images), len(curr_masks))
-                curr_images = curr_images[:min_frames]
-                curr_masks = curr_masks[:min_frames]
                 print(
                     f"Pay attention! the images amd mask are not with the same number {len(curr_images)} != {len(curr_masks)} ")
+                min_frames = min(len(curr_images), len(curr_masks)) # filter out images without corresponding masks
+                curr_images = curr_images[:min_frames]
+                curr_masks = curr_masks[:min_frames]
+                
                 for img_path, seg_path in zip(curr_images[:min_frames], curr_masks[:min_frames]):
                     im_num, mask_num = img_path.split(".")[-2][-3:], seg_path.split(".")[-2][-3:]
                     assert im_num == mask_num, f"Image number ({im_num}) is not equal to mask number ({mask_num})"
