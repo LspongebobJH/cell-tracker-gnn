@@ -102,15 +102,12 @@ class CellTrackLitModel(LightningModule):
         self.train_loss_outputs.append(loss)
 
         # log train metrics
-        preds_sum, tar_sum = self.train_PredCount(preds), self.train_TarCount(targets)
         acc, prec, rec = self.trClassMetric(preds, targets)
 
         self.log("train/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("train/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
         self.log("train/prec", prec, on_step=False, on_epoch=True, prog_bar=False)
         self.log("train/rec", rec, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("train/preds_sum", preds_sum, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("train/targets_sum", tar_sum, on_step=False, on_epoch=True, prog_bar=True)
 
         # we can return here dict with any tensors
         # and then read it in some callback or in training_epoch_end() below
@@ -131,8 +128,6 @@ class CellTrackLitModel(LightningModule):
         self.logger.experiment.add_scalar('train/acc_epoch', acc, self.current_epoch)
         self.logger.experiment.add_scalar('train/prec_epoch', prec, self.current_epoch)
         self.logger.experiment.add_scalar('train/recall_epoch', rec, self.current_epoch)
-        self.logger.experiment.add_scalar('train/preds_sum_epoch', self.train_PredCount.compute(), self.current_epoch)
-        self.logger.experiment.add_scalar('train/tar_sum_epoch', self.train_TarCount.compute(), self.current_epoch)
 
         self.trClassMetric.reset()
         self.train_PredCount.reset()
@@ -144,14 +139,11 @@ class CellTrackLitModel(LightningModule):
         self.valid_loss_outputs.append(loss)
 
         # log val metrics
-        preds_sum, tar_sum = self.val_PredCount(preds), self.val_TarCount(targets)
         acc, prec, rec = self.valClassMetric(preds, targets)
         self.log("val/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
         self.log("val/acc", acc, on_step=False, on_epoch=True, prog_bar=False)
         self.log("val/prec", prec, on_step=False, on_epoch=True, prog_bar=False)
         self.log("val/rec", rec, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("val/preds_sum", preds_sum, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("val/targets_sum", tar_sum, on_step=False, on_epoch=True, prog_bar=False)
 
         return {"loss": loss}
 
@@ -168,8 +160,6 @@ class CellTrackLitModel(LightningModule):
         self.logger.experiment.add_scalar('val/acc_epoch',       acc, self.current_epoch)
         self.logger.experiment.add_scalar('val/prec_epoch',      prec, self.current_epoch)
         self.logger.experiment.add_scalar('val/recall_epoch',    rec, self.current_epoch)
-        self.logger.experiment.add_scalar('val/preds_sum_epoch', self.val_PredCount.compute(), self.current_epoch)
-        self.logger.experiment.add_scalar('val/tar_sum_epoch',   self.val_TarCount.compute(), self.current_epoch)
 
         self.valClassMetric.reset()
         self.val_PredCount.reset()
@@ -179,15 +169,11 @@ class CellTrackLitModel(LightningModule):
     def test_step(self, batch: Any, batch_idx: int):
         loss, preds, targets = self.step(batch)
 
-        preds_sum, tar_sum = self.test_PredCount(preds), self.test_TarCount(targets)
-
         acc, prec, rec = self.testClassMetric(preds, targets)
         self.log("test/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("test/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
         self.log("test/prec", prec, on_step=False, on_epoch=True, prog_bar=False)
         self.log("test/rec", rec, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("test/preds_sum", preds_sum, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("test/targets_sum", tar_sum, on_step=False, on_epoch=True, prog_bar=True)
 
         return {"loss": loss, "preds": preds, "targets": targets}
 
@@ -205,8 +191,6 @@ class CellTrackLitModel(LightningModule):
         self.log("test/acc_epoch", acc, prog_bar=True)
         self.log("test/prec_epoch", prec, prog_bar=True)
         self.log("test/rec_epoch", rec, prog_bar=True)
-        self.log("test/preds_sum_epoch", self.test_PredCount.compute(), prog_bar=True)
-        self.log("test/targets_sum_epoch", self.test_TarCount.compute(), prog_bar=True)
 
         self.testClassMetric.reset()
 
