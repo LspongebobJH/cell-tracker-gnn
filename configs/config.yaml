@@ -7,6 +7,7 @@ defaults:
     - datamodule_multiSequence.yaml # can be changed
     - default_callbacks.yaml  # do not change
     - many_loggers.yaml  # do not change
+    - infer.yaml
 
 one_hot: True
 separate_models: True

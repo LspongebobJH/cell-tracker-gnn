@@ -41,12 +41,11 @@ export HYDRA_FULL_ERROR=1
 # --num_epochs 100 --patience 10 \
 # --lr_trunk 1e-4 --lr_embedder 1e-4 --num_sequences 1 --exp_name 0 --num_workers 12
 
-# python run_feat_extract.py --sequences 01 --input_model /home/ubuntu/cell-tracker-gnn/logs/logs_0/all_params.pth \
+# NOTE that the metric learning module have been trained by 01 and 02
+# python run_feat_extract.py --sequences 02 --input_model /home/ubuntu/cell-tracker-gnn/logs/logs_0/all_params.pth \
 # --output_csv ./data/ct_features/
 
 python run.py \
-datamodule.dataset_params.main_path="./data/ct_features/Fluo-N2DH-SIM+" \
-datamodule.dataset_params.exp_name="0" \
-datamodule.dataset_params.drop_feat=[]
+datamodule.dataset_params.dirs_path.train=['01'] datamodule.dataset_params.exp_name="c2" datamodule.dataset_params.drop_feat=[]
 
 

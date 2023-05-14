@@ -1,0 +1,2 @@
+inference:
+  checkpoint_path: /home/ubuntu/cell-tracker-gnn/logs/logs_None/gnn/checkpoints/epoch=145.ckpt
