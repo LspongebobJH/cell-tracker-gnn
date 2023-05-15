@@ -78,10 +78,10 @@ class CellTrackDataset(InMemoryDataset):
         self.same_frame = same_frame # connect links within the same frame or not? author set to False
         self.next_frame = next_frame # connect links across adjacent frames or not?
         self.self_loop = self_loop
-        self.overlap = overlap
+        self.overlap = overlap # sliding window step size
         self.directed = directed
         self.num_frames = num_frames
-        self.jump_frames = jump_frames
+        self.jump_frames = jump_frames # nodes at i frame connect to nodes at i + jump_frames frame
 
         self.train_seq_len_check = []
         # attributes for paths handling
@@ -406,7 +406,8 @@ class CellTrackDataset(InMemoryDataset):
         for ind in range(0, num_files, self.overlap):
             # break when the length of the graph is smaller than the rest number of frames
             if ind + num_frames > num_files:
-                break
+                num_frames = num_files - ind
+                # break TODO: test
 
             # read the current frame CSVs
             temp_data = [pd.read_csv(files[ind_tmp]) for ind_tmp in range(ind, ind + num_frames, self.jump_frames)]
