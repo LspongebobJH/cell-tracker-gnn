@@ -139,7 +139,7 @@ class TestDataset(Dataset):
 
         return embedded_img.numpy().squeeze()
 
-    def preprocess_basic_features(self, path_to_write):
+    def preprocess_basic_features(self, path_to_write, debug):
         cols = ["id",
                 "frame_num",
                 "area",
@@ -219,12 +219,13 @@ class TestDataset(Dataset):
             sub_dir = op.join(self.path.split("/")[-2], self.sec_path)
             full_dir = op.join(path_to_write, sub_dir)
             full_dir = op.join(full_dir, "csv")
-            os.makedirs(to_absolute_path(full_dir), exist_ok=True)
             file_path = op.join(full_dir, f"frame_{im_num}.csv")
-            df.to_csv(to_absolute_path(file_path), index=False)
-        print(f"files were saved to : {full_dir}")
+            if not debug:
+                os.makedirs(to_absolute_path(full_dir), exist_ok=True)
+                df.to_csv(to_absolute_path(file_path), index=False)
+        print(f"files were saved to : {full_dir}, debug: {debug}")
 
-    def preprocess_features_metric_learning(self, path_to_write, dict_path):
+    def preprocess_features_metric_learning(self, path_to_write, dict_path, debug):
         dict_params = torch.load(dict_path)
 
         self.min_cell = dict_params['min_cell'][int(self.sec_path) - 1]
@@ -333,15 +334,16 @@ class TestDataset(Dataset):
             sub_dir = op.join(self.path.split("/")[-2], self.sec_path)
             full_dir = op.join(path_to_write, sub_dir)
             full_dir = op.join(full_dir, "csv")
-            os.makedirs(to_absolute_path(full_dir), exist_ok=True)
             file_path = op.join(full_dir, f"frame_{im_num}.csv")
-            df.to_csv(to_absolute_path(file_path), index=False)
-        print(f"files were saved to : {full_dir}")
+            if not debug:
+                os.makedirs(to_absolute_path(full_dir), exist_ok=True)
+                df.to_csv(to_absolute_path(file_path), index=False)
+        print(f"files were saved to : {full_dir}, debug: {debug}")
 
 
 def create_csv(input_images, input_masks, input_seg,
                input_model, output_csv, basic=False,
-               sequences=['01', '02'], seg_dir='_ST/SEG'):
+               sequences=['01', '02'], seg_dir='_ST/SEG', debug=False):
     dict_path = input_model
     path_output = output_csv
     path_Seg_result = input_seg
@@ -357,9 +359,9 @@ def create_csv(input_images, input_masks, input_seg,
             type_img="tif",
             sec_path=seq)
         if basic:
-            ds.preprocess_basic_features(path_to_write=path_output)
+            ds.preprocess_basic_features(path_to_write=path_output, debug=debug)
         else:
-            ds.preprocess_features_metric_learning(path_to_write=path_output, dict_path=dict_path)
+            ds.preprocess_features_metric_learning(path_to_write=path_output, dict_path=dict_path, debug=debug)
 
 
 if __name__ == "__main__":

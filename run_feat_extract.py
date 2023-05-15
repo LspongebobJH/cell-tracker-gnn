@@ -12,6 +12,7 @@ if __name__ == "__main__":
     parser.add_argument('--basic', action='store_true', default=False)
     parser.add_argument('--sequences', nargs='+', default=['01', '02'])
     parser.add_argument('--seg_dir', type=str, default='_GT/TRA')
+    parser.add_argument('--debug', action='store_true', default=False)
     args = parser.parse_args()
 
     create_csv(**vars(args))

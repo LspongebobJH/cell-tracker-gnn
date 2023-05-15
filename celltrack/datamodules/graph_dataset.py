@@ -75,8 +75,8 @@ class CellTrackDataset(InMemoryDataset):
         self.modes = ["train", "valid", "test"]
         self.type_file = type_file
         # attributes for graph construction
-        self.same_frame = same_frame
-        self.next_frame = next_frame
+        self.same_frame = same_frame # connect links within the same frame or not? author set to False
+        self.next_frame = next_frame # connect links across adjacent frames or not?
         self.self_loop = self_loop
         self.overlap = overlap
         self.directed = directed
@@ -166,14 +166,17 @@ class CellTrackDataset(InMemoryDataset):
             for ind_node in range(0, nodes.shape[0] - 1):
                 # until the -2 - since we connect nodes in the graphs,
                 # so the last frame cells cant connect to the next frame's cells
-                if frames[ind_node] + self.jump_frames == frames[ind_node + 1]:
+
+                # if the node does not disappear at the next frame, than connect edges between successive frames
+                # otherwise, for the same node at the several frames later, we build a new trajectory.
+                if frames[ind_node] + self.jump_frames == frames[ind_node + 1]: 
                     link_edges.append([nodes[ind_node], nodes[ind_node + 1]])
                     if not self.directed:
                         link_edges.append([nodes[ind_node + 1], nodes[ind_node]])
 
         return link_edges
 
-    def filter_by_roi(self, df_data_curr, df_data_next):
+    def filter_by_roi(self, df_data_curr, df_data_next): # the current frame and the next frame
         cols = ["centroid_row", "centroid_col"]
         if self.is_3d:
             cols.append("centroid_depth")
@@ -212,10 +215,10 @@ class CellTrackDataset(InMemoryDataset):
         iter_frames = np.unique(df_data.frame_num.values)
         for loop_ind, frame_ind in enumerate(iter_frames[:-1]):
             # find the places containing the specific frame index
-            mask_frame = df_data.frame_num.isin([frame_ind])
+            mask_frame = df_data.frame_num.isin([frame_ind]) # filter nodes within a certain frame
             nodes = df_data.index[mask_frame].values.tolist()
             # doing aggregation of the same frame links
-            if self.same_frame:
+            if self.same_frame: # this part will fully connect all nodes within the same frame. author set it not work
                 if self.self_loop:
                     same_next_edge_index += [list(tup) for tup in itertools.product(nodes, nodes)]
                 else:
@@ -227,7 +230,7 @@ class CellTrackDataset(InMemoryDataset):
                     mask_next_frame = df_data.frame_num.isin([iter_frames[loop_ind + 1]])
                     next_nodes = df_data.index[mask_next_frame].values.tolist()
                     if self.filter_edges:
-                        curr_list = self.filter_by_roi(df_data.loc[mask_frame, :], df_data.loc[mask_next_frame, :])
+                        curr_list = self.filter_by_roi(df_data.loc[mask_frame, :], df_data.loc[mask_next_frame, :]) # find identical nodes across adjacent frames. Identity is checked based on ROI
                         curr_list = list(filter(lambda x: not (x in link_edges), curr_list))
                     else:
                         curr_list = [list(tup) for tup in itertools.product(nodes, next_nodes)
@@ -378,6 +381,11 @@ class CellTrackDataset(InMemoryDataset):
     def create_graph(self, curr_dir, mode):
         """
         curr_dir: str : path to the directory holds CSVs files to build the graph upon
+
+        There are two procedures to connect nodes across adjacent frames:
+        1) link_edges = self.true_links(df_data) : connect nodes with the same id(identity) across adjacent frames
+        2) link_edges += self.same_next_links(df_data, link_edges) : onnect nodes identified within the same ROI across adjacent frames
+        The second type will find nodes which are quite closed to each other (within the similar ROI) but not being identified to be the same node
         """
         data_list = []
         drop_col_list = ['id']
@@ -404,10 +412,10 @@ class CellTrackDataset(InMemoryDataset):
             temp_data = [pd.read_csv(files[ind_tmp]) for ind_tmp in range(ind, ind + num_frames, self.jump_frames)]
             df_data = pd.concat(temp_data, axis=0).reset_index(drop=True)
 
-            link_edges = self.true_links(df_data)
+            link_edges = self.true_links(df_data) # connect nodes with the same id(identity) across adjacent frames
             connected_edges = len(link_edges)
             if self.same_frame or self.next_frame:
-                link_edges += self.same_next_links(df_data, link_edges)
+                link_edges += self.same_next_links(df_data, link_edges) # connect nodes identified within the same ROI across adjacent frames
 
             # convert to torch tensor
             edge_index = [torch.tensor([lst], dtype=torch.long) for lst in link_edges]
