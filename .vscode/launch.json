@@ -37,7 +37,7 @@
             "cwd": "/home/ubuntu/cell-tracker-gnn",
             "args": [
                 "--sequences", "01", "--input_model", "/home/ubuntu/cell-tracker-gnn/logs/logs_0/all_params.pth", 
-                "--output_csv", "./data/ct_features/"
+                "--output_csv", "./data/ct_features/", "--debug"
             ]
         },
 

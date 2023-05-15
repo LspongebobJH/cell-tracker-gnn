@@ -121,12 +121,12 @@ class TestDataset(Dataset):
                     min_row_bb:max_row_bb,
                     min_col_bb:max_col_bb] != ind
 
-        img_patch[msk_patch] = self.pad_value
+        img_patch[msk_patch] = self.pad_value # img patches that dont match the current node are set to 0
         img_patch = img_patch.astype(np.float32)
 
         if normalize_type == 'regular':
             img = self.padding(img_patch) / self.max_img
-        elif normalize_type == 'MinMaxCell':
+        elif normalize_type == 'MinMaxCell': # min max normalization to all cells
             not_msk_patch = np.logical_not(msk_patch)
             img_patch[not_msk_patch] = (img_patch[not_msk_patch] - self.min_cell) / (self.max_cell - self.min_cell)
             img = self.padding(img_patch)
@@ -228,10 +228,10 @@ class TestDataset(Dataset):
     def preprocess_features_metric_learning(self, path_to_write, dict_path, debug):
         dict_params = torch.load(dict_path)
 
-        self.min_cell = dict_params['min_cell'][int(self.sec_path) - 1]
-        self.max_cell = dict_params['max_cell'][int(self.sec_path) - 1]
+        self.min_cell = dict_params['min_cell'][int(self.sec_path) - 1] # used for minmax normalization
+        self.max_cell = dict_params['max_cell'][int(self.sec_path) - 1] # used for minmax normalization
         self.roi_model = dict_params['roi']
-        self.pad_value = dict_params['pad_value']
+        self.pad_value = dict_params['pad_value'] # pad with 0
         # models params
         model_name = dict_params['model_name']
         mlp_dims = dict_params['mlp_dims']
