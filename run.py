@@ -24,6 +24,16 @@ from celltrack.models.celltrack_plmodel import CellTrackLitModel
 
 log = logging.getLogger(__name__)
 
+''' Remove hydra and pytorch lightning components
+[] convert hydra to simple omegaconf
+[] convert lightning data module to simple pytorch dataset module
+[] convert lightning model to simple pytorch model
+[] convert logging module to wandb
+[] can we directly use lightning earlystop module instead of using it as a callback?
+    if yes, we use it. if not, convert it into a simple earlystopping module
+[] convert trainer to a simple training script
+'''
+
 def train(config: DictConfig) -> Optional[float]:
     """Contains training pipeline.
     Instantiates all PyTorch Lightning objects from config.
