@@ -1,5 +1,5 @@
 import dotenv
-import hydra
+import os
 
 # load environment variables from `.env` file if it exists
 # recursively searches for `.env` in all folders starting from work dir
@@ -15,8 +15,7 @@ from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning import seed_everything
 
-import hydra
-from omegaconf import DictConfig
+from omegaconf import OmegaConf, DictConfig
 
 from celltrack.utils import utils
 from celltrack.datamodules.celltrack_datamodule_mulSeq import CellTrackDataModule
@@ -25,7 +24,7 @@ from celltrack.models.celltrack_plmodel import CellTrackLitModel
 log = logging.getLogger(__name__)
 
 ''' Remove hydra and pytorch lightning components
-[] convert hydra to simple omegaconf
+[x] convert hydra to simple omegaconf
 [] convert lightning data module to simple pytorch dataset module
 [] convert lightning model to simple pytorch model
 [] convert logging module to wandb
@@ -118,18 +117,15 @@ def train(config: DictConfig) -> Optional[float]:
     # Print path to best checkpoint
     log.info(f"Best checkpoint path:\n{trainer.checkpoint_callback.best_model_path}")
 
-#  config_multiLabel config
-@hydra.main(config_path="configs/", config_name="config.yaml")
-def main(config):
-    utils.extras(config)
-
-    # Pretty print config using Rich library
-    if config.get("print_config"):
-        utils.print_config(config, resolve=True)
-
-    # Train model
-    return train(config)
-
-
+def load_conf():
+    cfg_cmd = OmegaConf.from_cli()  
+    cfg = OmegaConf.load('configs/config.yaml')
+    cfg = OmegaConf.merge(cfg, cfg_cmd)
+    for cfg_path in cfg.defaults:
+        cfg = OmegaConf.merge(cfg, OmegaConf.load(os.path.join('configs', cfg_path)))
+    return cfg
+    
 if __name__ == "__main__":
-    main()
+    cfg = load_conf()
+    # Train model
+    train(cfg)
