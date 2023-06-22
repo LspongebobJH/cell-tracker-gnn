@@ -27,24 +27,13 @@ log = logging.getLogger(__name__)
 ''' Remove hydra and pytorch lightning components
 [x] convert hydra to simple omegaconf
 [x] convert logging module to wandb
+[] wandb log hyperparameters correctly
+[] batch size issue
+[] data position refactor
+[] pydev issue
 '''
 
 def train(config: DictConfig) -> Optional[float]:
-    """Contains training pipeline.
-    Instantiates all PyTorch Lightning objects from config.
-
-    Args:
-        config (DictConfig): Configuration composed by Hydra.
-
-    Returns:
-        Optional[float]: Metric score for hyperparameter optimization.
-    """
-
-    ########################################
-    ########################################
-    ######### lightning config #############
-    ########################################
-    ########################################
 
     # Set seed for random number generators in pytorch, numpy and python.random
     if "seed" in config:
@@ -79,12 +68,6 @@ def train(config: DictConfig) -> Optional[float]:
         logger=logger,
     )
 
-    ########################################
-    ########################################
-    ##### model training and testing #######
-    ########################################
-    ########################################
-
     # Train the model
     log.info("Starting training!")
     trainer.fit(model=model, datamodule=datamodule)
@@ -92,12 +75,6 @@ def train(config: DictConfig) -> Optional[float]:
     # Evaluate model on test set after training
     log.info("Starting testing!")
     trainer.test(model=model, datamodule=datamodule)
-
-    ########################################
-    ########################################
-    ######### lightning config #############
-    ########################################
-    ########################################
 
     # Make sure everything closed properly
     log.info("Finalizing!")

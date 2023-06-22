@@ -6,7 +6,7 @@ callbacks:
         mode: "max"             # can be "max" or "min"
         verbose: False
         dirpath: '${log_dir}/gnn/checkpoints/'
-        filename: {epoch:02d}
+        filename: '{epoch:02d}'
 
 
     early_stopping:

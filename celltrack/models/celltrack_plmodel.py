@@ -99,15 +99,15 @@ class CellTrackLitModel(LightningModule):
             self.log(f"{stage}/rec", rec, prog_bar=False)
         else:
             loss, acc, prec, rec =\
-            np.mean(self.metric_hist[f'{stage}/loss']),\
-            np.mean(self.metric_hist[f'{stage}/acc']),\
-            np.mean(self.metric_hist[f'{stage}/prec']),\
-            np.mean(self.metric_hist[f'{stage}/rec'])
+            torch.tensor(self.metric_hist[f'{stage}/loss']).mean(),\
+            torch.tensor(self.metric_hist[f'{stage}/acc']).mean(),\
+            torch.tensor(self.metric_hist[f'{stage}/prec']).mean(),\
+            torch.tensor(self.metric_hist[f'{stage}/rec']).mean(),\
 
             self.log(f"{stage}/loss_epoch", loss)
-            self.log(f'{stage}/acc_epoch', acc, self.current_epoch)
-            self.log(f'{stage}/prec_epoch', prec, self.current_epoch)
-            self.log(f'{stage}/recall_epoch', rec, self.current_epoch)
+            self.log(f'{stage}/acc_epoch', acc)
+            self.log(f'{stage}/prec_epoch', prec)
+            self.log(f'{stage}/recall_epoch', rec)
 
             for key in self.metric_hist.keys():
                 if key.startswith(f'{stage}/'):
