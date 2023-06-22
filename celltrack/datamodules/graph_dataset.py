@@ -10,7 +10,6 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 import torch
 from torch.nn.functional import one_hot
 from torch_geometric.data import Data, InMemoryDataset
-from hydra.utils import get_original_cwd
 import warnings
 
 
@@ -42,7 +41,6 @@ class CellTrackDataset(InMemoryDataset):
                  which_preprocess='MinMax',
                  drop_feat=[],
                  ):
-        main_path = os.path.join(get_original_cwd(), main_path) if main_path.startswith('./') else main_path
         # attributes for the filter edges using ROI
         self.separate_models = separate_models
         self.save_stats = save_stats

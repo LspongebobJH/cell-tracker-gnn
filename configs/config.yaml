@@ -13,9 +13,10 @@ one_hot: True
 separate_models: True
 
 work_dir: /home/ubuntu/cell-tracker-gnn
-data_dir: ${work_dir}/data/
-exp_name: #Please/insert/experiment/name
-log_dir: ${work_dir}/logs/logs_${exp_name}
+data_root: /mnt/jiahanli/cell-tracker-gnn
+data_dir: ${data_root}/data
+exp_name: test
+log_dir: ${data_root}/logs/logs_${exp_name}
 
 debug: False
 

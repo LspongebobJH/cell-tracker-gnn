@@ -12,7 +12,6 @@ import cv2
 import warnings
 from scipy.ndimage import grey_erosion
 from scipy.ndimage.morphology import grey_dilation
-from hydra.utils import get_original_cwd
 
 
 def my_imshow(img, title_str='', cmap='gray'):

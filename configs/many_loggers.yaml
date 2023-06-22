@@ -1,11 +1,13 @@
 
 logger:
-    # # CSVLogger built in PyTorch Lightning
-    # csv:
-    #     save_dir: "${log_dir}/gnn/csv/"
-    #     name: "default"
-
     # TensorBoard
     tensorboard:
         save_dir: "${log_dir}/gnn/tensorboard/"
-        name: "default"
+        name: "${exp_name}"
+
+    # wandb:
+    wandb:
+        save_dir: "${log_dir}"
+        project: "${exp_name}"
+
+

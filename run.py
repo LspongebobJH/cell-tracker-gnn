@@ -12,6 +12,7 @@ from pytorch_lightning import LightningModule, LightningDataModule, Callback, Tr
 from pytorch_lightning.loggers.logger import Logger
 from pytorch_lightning.loggers.csv_logs import CSVLogger
 from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
+from pytorch_lightning.loggers.wandb import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning import seed_everything
 
@@ -25,12 +26,7 @@ log = logging.getLogger(__name__)
 
 ''' Remove hydra and pytorch lightning components
 [x] convert hydra to simple omegaconf
-[] convert lightning data module to simple pytorch dataset module
-[] convert lightning model to simple pytorch model
-[] convert logging module to wandb
-[] can we directly use lightning earlystop module instead of using it as a callback?
-    if yes, we use it. if not, convert it into a simple earlystopping module
-[] convert trainer to a simple training script
+[x] convert logging module to wandb
 '''
 
 def train(config: DictConfig) -> Optional[float]:
@@ -67,13 +63,13 @@ def train(config: DictConfig) -> Optional[float]:
 
     # Init Lightning loggers
     logger: List[Logger] = []
-    # logger.append(CSVLogger(**config.logger.csv))
-    logger.append(TensorBoardLogger(**config.logger.tensorboard))
-
+    # logger.append(TensorBoardLogger(**config.logger.tensorboard))
+    logger.append(WandbLogger(**config.logger.wandb))
+    
     # Init Lightning trainer
     trainer = Trainer(**config.trainer, callbacks=callbacks, logger=logger)
 
-    # Send some parameters from config to all lightning loggers    log.info("Logging hyperparameters!")
+    log.info("Logging hyperparameters!")
     utils.log_hyperparameters(
         config=config,
         model=model,
@@ -124,8 +120,13 @@ def load_conf():
     for cfg_path in cfg.defaults:
         cfg = OmegaConf.merge(cfg, OmegaConf.load(os.path.join('configs', cfg_path)))
     return cfg
+
+def mkdir(cfg:DictConfig):
+    log_dir = cfg.log_dir
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
     
 if __name__ == "__main__":
     cfg = load_conf()
-    # Train model
+    mkdir(cfg)
     train(cfg)

@@ -62,7 +62,7 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "exp_name='test'",
+                "exp_name='c2'",
                 "datamodule.dataset_params.dirs_path.train=['01']",
                 "datamodule.dataset_params.drop_feat=[]"
             ]

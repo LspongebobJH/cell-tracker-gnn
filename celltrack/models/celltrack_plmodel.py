@@ -3,10 +3,11 @@ import torch
 import torch.nn.functional as F
 from torch import optim
 from torch.optim import lr_scheduler
+import numpy as np
 
 from pytorch_lightning import LightningModule
-from celltrack.metrics.metrics import Countspecific, ClassificationMetrics
 import celltrack.models.gnn_modules.celltrack_model as celltrack_model
+from torchmetrics import Accuracy, Precision, Recall
 
 
 class CellTrackLitModel(LightningModule):
@@ -35,8 +36,6 @@ class CellTrackLitModel(LightningModule):
         **kwargs
     ):
         super().__init__()
-        self.train_loss_outputs = []
-        self.valid_loss_outputs = []
 
         # this line ensures params passed to LightningModule will be saved to ckpt
         # it also allows to access params with 'self.hparams' attribute
@@ -51,26 +50,15 @@ class CellTrackLitModel(LightningModule):
         self.weight_loss = weight_loss
 
         # loss function
-        if self.hparams.one_hot_label:
-            self.criterion = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor(loss_weights))
-        else:
-            self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor(loss_weights))
 
-        
-        self.trClassMetric, self.valClassMetric, self.testClassMetric = \
-                ClassificationMetrics(), ClassificationMetrics(), ClassificationMetrics()
-        
-        self.train_PredCount = Countspecific()
-        self.val_PredCount = Countspecific()
-        self.test_PredCount = Countspecific()
-
-        self.train_TarCount, self.val_TarCount, self.test_TarCount = Countspecific(), Countspecific(), Countspecific()
+        self.acc, self.prec, self.rec =\
+            Accuracy('binary'), Precision('binary'), Recall('binary')
 
         self.metric_hist = {
-            "train/acc": [],
-            "val/acc": [],
-            "train/loss": [],
-            "val/loss": [],
+            "train/acc": [], "train/prec": [], "train/rec": [], "train/loss": [],
+            "val/acc": [], "val/prec": [], "val/rec": [], "val/loss": [],
+            'test/acc': [], 'test/prec': [], 'test/rec': [], 'test/loss': []
         }
 
     def forward(self, x, edge_index, edge_feat):
@@ -96,106 +84,58 @@ class CellTrackLitModel(LightningModule):
         preds = (y_hat >= 0.5).type(torch.int16)
         edge_label = edge_label.type(torch.int16)
         return loss, preds, edge_label
+    
+    def logging(self, level, stage, loss, preds, targets):
+        if level == 'step':
+            acc, prec, rec = self.acc(preds, targets), self.prec(preds, targets), self.rec(preds, targets)
+            self.metric_hist[f'{stage}/acc'].append(acc.item())
+            self.metric_hist[f'{stage}/prec'].append(prec.item())
+            self.metric_hist[f'{stage}/rec'].append(rec.item())
+            self.metric_hist[f'{stage}/loss'].append(loss.item())
+
+            self.log(f"{stage}/loss", loss, prog_bar=True)
+            self.log(f"{stage}/acc", acc, prog_bar=True)
+            self.log(f"{stage}/prec", prec, prog_bar=False)
+            self.log(f"{stage}/rec", rec, prog_bar=False)
+        else:
+            loss, acc, prec, rec =\
+            np.mean(self.metric_hist[f'{stage}/loss']),\
+            np.mean(self.metric_hist[f'{stage}/acc']),\
+            np.mean(self.metric_hist[f'{stage}/prec']),\
+            np.mean(self.metric_hist[f'{stage}/rec'])
+
+            self.log(f"{stage}/loss_epoch", loss)
+            self.log(f'{stage}/acc_epoch', acc, self.current_epoch)
+            self.log(f'{stage}/prec_epoch', prec, self.current_epoch)
+            self.log(f'{stage}/recall_epoch', rec, self.current_epoch)
+
+            for key in self.metric_hist.keys():
+                if key.startswith(f'{stage}/'):
+                    self.metric_hist[key].clear()
 
     def training_step(self, batch: Any, batch_idx: int):
         loss, preds, targets = self.step(batch)
-        self.train_loss_outputs.append(loss)
-
-        # log train metrics
-        acc, prec, rec = self.trClassMetric(preds, targets)
-
-        self.log("train/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("train/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("train/prec", prec, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("train/rec", rec, on_step=False, on_epoch=True, prog_bar=False)
-
-        # we can return here dict with any tensors
-        # and then read it in some callback or in training_epoch_end() below
-        # remember to always return loss from training_step, or else backpropagation will fail!
+        self.logging('step', 'train', loss, preds, targets)
         return {"loss": loss}
 
     def on_train_epoch_end(self):
-        avg_loss = torch.stack(self.train_loss_outputs).mean().to(self.device)
-        self.logger.experiment.add_scalars('loss_epoch', {'train': avg_loss}, global_step=self.current_epoch)
-
-        # log best so far train acc and train loss
-        self.metric_hist["train/acc"].append(self.trainer.callback_metrics["train/acc"])
-        self.metric_hist["train/loss"].append(self.trainer.callback_metrics["train/loss"])
-        self.log("train/acc_best", max(self.metric_hist["train/acc"]), prog_bar=False)
-        self.log("train/loss_best", min(self.metric_hist["train/loss"]), prog_bar=False)
-
-        acc, prec, rec = self.trClassMetric.compute()
-        self.logger.experiment.add_scalar('train/acc_epoch', acc, self.current_epoch)
-        self.logger.experiment.add_scalar('train/prec_epoch', prec, self.current_epoch)
-        self.logger.experiment.add_scalar('train/recall_epoch', rec, self.current_epoch)
-
-        self.trClassMetric.reset()
-        self.train_PredCount.reset()
-        self.train_TarCount.reset()
-        self.train_loss_outputs.clear()
+        self.logging('epoch', 'train', None, None, None)
 
     def validation_step(self, batch: Any, batch_idx: int):
         loss, preds, targets = self.step(batch)
-        self.valid_loss_outputs.append(loss)
-
-        # log val metrics
-        acc, prec, rec = self.valClassMetric(preds, targets)
-        self.log("val/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("val/acc", acc, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("val/prec", prec, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("val/rec", rec, on_step=False, on_epoch=True, prog_bar=False)
-
+        self.logging('step', 'val', loss, preds, targets)
         return {"loss": loss}
 
     def on_validation_epoch_end(self):
-        avg_loss = torch.stack(self.valid_loss_outputs).mean().to(self.device)
-        self.logger.experiment.add_scalars('loss_epoch', {'val': avg_loss}, global_step=self.current_epoch)
-
-        # log best so far val acc and val loss
-        self.metric_hist["val/acc"].append(self.trainer.callback_metrics["val/acc"])
-        self.metric_hist["val/loss"].append(self.trainer.callback_metrics["val/loss"])
-        self.log("val/acc_best", max(self.metric_hist["val/acc"]), prog_bar=False)
-        self.log("val/loss_best", min(self.metric_hist["val/loss"]), prog_bar=False)
-        acc, prec, rec = self.valClassMetric.compute()
-        self.logger.experiment.add_scalar('val/acc_epoch',       acc, self.current_epoch)
-        self.logger.experiment.add_scalar('val/prec_epoch',      prec, self.current_epoch)
-        self.logger.experiment.add_scalar('val/recall_epoch',    rec, self.current_epoch)
-
-        self.valClassMetric.reset()
-        self.val_PredCount.reset()
-        self.val_TarCount.reset()
-        self.valid_loss_outputs.clear()
-
+        self.logging('epoch', 'val', None, None, None)
+        
     def test_step(self, batch: Any, batch_idx: int):
         loss, preds, targets = self.step(batch)
-
-        acc, prec, rec = self.testClassMetric(preds, targets)
-        self.log("test/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("test/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("test/prec", prec, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("test/rec", rec, on_step=False, on_epoch=True, prog_bar=False)
-
+        self.logging('step', 'test', loss, preds, targets)
         return {"loss": loss, "preds": preds, "targets": targets}
 
     def on_test_epoch_end(self):
-        acc, prec, rec = self.testClassMetric.compute()
-        
-        TP = self.testClassMetric.TP
-        FP = self.testClassMetric.FP
-        TN = self.testClassMetric.TN
-        FN = self.testClassMetric.FN
-        self.log("test/TP_epoch", TP, prog_bar=True)
-        self.log("test/FP_epoch", FP, prog_bar=True)
-        self.log("test/TN_epoch", TN, prog_bar=True)
-        self.log("test/FN_epoch", FN, prog_bar=True)
-        self.log("test/acc_epoch", acc, prog_bar=True)
-        self.log("test/prec_epoch", prec, prog_bar=True)
-        self.log("test/rec_epoch", rec, prog_bar=True)
-
-        self.testClassMetric.reset()
-
-        self.test_PredCount.reset()
-        self.test_TarCount.reset()
+       self.logging('epoch', 'test', None, None, None)
 
     def configure_optimizers(self):
         """Choose what optimizers and learning-rate schedulers to use in your optimization.

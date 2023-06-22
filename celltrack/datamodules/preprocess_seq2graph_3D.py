@@ -7,7 +7,6 @@ import warnings
 from torch.utils.data import Dataset
 from skimage.measure import regionprops
 from skimage import io
-from hydra.utils import get_original_cwd, to_absolute_path
 
 from ..models.resnet_3d.resnet import set_model_architecture, MLP
 
@@ -221,8 +220,8 @@ class TestDataset(Dataset):
             full_dir = op.join(full_dir, "csv")
             file_path = op.join(full_dir, f"frame_{im_num}.csv")
             if not debug:
-                os.makedirs(to_absolute_path(full_dir), exist_ok=True)
-                df.to_csv(to_absolute_path(file_path), index=False)
+                os.makedirs(full_dir, exist_ok=True)
+                df.to_csv(file_path, index=False)
         print(f"files were saved to : {full_dir}, debug: {debug}")
 
     def preprocess_features_metric_learning(self, path_to_write, dict_path, debug):
@@ -336,8 +335,8 @@ class TestDataset(Dataset):
             full_dir = op.join(full_dir, "csv")
             file_path = op.join(full_dir, f"frame_{im_num}.csv")
             if not debug:
-                os.makedirs(to_absolute_path(full_dir), exist_ok=True)
-                df.to_csv(to_absolute_path(file_path), index=False)
+                os.makedirs(full_dir, exist_ok=True)
+                df.to_csv(file_path, index=False)
         print(f"files were saved to : {full_dir}, debug: {debug}")
 
 

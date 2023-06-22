@@ -1,5 +1,4 @@
 import dotenv
-import hydra
 
 # load environment variables from `.env` file if it exists
 # recursively searches for `.env` in all folders starting from work dir
@@ -15,7 +14,6 @@ from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning import seed_everything
 
-import hydra
 from omegaconf import DictConfig, OmegaConf
 
 from celltrack.utils import utils
