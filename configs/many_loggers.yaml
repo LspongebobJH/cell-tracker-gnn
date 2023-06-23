@@ -5,6 +5,7 @@ logger:
         save_dir: "${log_dir}/gnn/tensorboard/"
         name: "${exp_name}"
 
+    use_wandb: True
     # wandb:
     wandb:
         save_dir: "${log_dir}"

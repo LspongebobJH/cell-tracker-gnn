@@ -39,7 +39,7 @@ class CellTrackLitModel(LightningModule):
 
         # this line ensures params passed to LightningModule will be saved to ckpt
         # it also allows to access params with 'self.hparams' attribute
-        self.save_hyperparameters()
+        self.save_hyperparameters(logger=False)
         self.separate_models = separate_models
         if self.separate_models:
             model_attr = getattr(celltrack_model, model_params.target)
@@ -93,10 +93,11 @@ class CellTrackLitModel(LightningModule):
             self.metric_hist[f'{stage}/rec'].append(rec.item())
             self.metric_hist[f'{stage}/loss'].append(loss.item())
 
-            self.log(f"{stage}/loss", loss, prog_bar=True)
-            self.log(f"{stage}/acc", acc, prog_bar=True)
-            self.log(f"{stage}/prec", prec, prog_bar=False)
-            self.log(f"{stage}/rec", rec, prog_bar=False)
+            # NOTE: it does not matter to set the batch_size to 1
+            self.log(f"{stage}/loss", loss, prog_bar=True, batch_size=1)
+            self.log(f"{stage}/acc", acc, prog_bar=True, batch_size=1)
+            self.log(f"{stage}/prec", prec, prog_bar=False, batch_size=1)
+            self.log(f"{stage}/rec", rec, prog_bar=False, batch_size=1)
         else:
             loss, acc, prec, rec =\
             torch.tensor(self.metric_hist[f'{stage}/loss']).mean(),\

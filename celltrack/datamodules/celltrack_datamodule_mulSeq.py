@@ -3,7 +3,7 @@ from typing import Optional
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import Subset
 
-from torch_geometric.data import DataLoader
+from torch_geometric.loader import DataLoader
 from .graph_dataset import CellTrackDataset
 
 

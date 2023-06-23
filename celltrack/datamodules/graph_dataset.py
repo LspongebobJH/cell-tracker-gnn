@@ -25,7 +25,7 @@ class CellTrackDataset(InMemoryDataset):
                  mul_vals=[2, 2, 2],
                  produce_gt='simple',
                  split='train',
-                 exp_name='',
+                 version='',
                  overlap=1,
                  jump_frames=1,
                  filter_edges=False,
@@ -54,7 +54,7 @@ class CellTrackDataset(InMemoryDataset):
         assert not (flag_2d and flag_3d), "Please provide experiment name with only one detailed dimension (e.g. 2D/3D)"
         assert flag_2d or flag_3d, "Please provide experiment name with detailed dimension (e.g. 2D/3D)"
         self.is_3d = flag_3d and (not flag_2d)
-        flag_Hela = 'hela' in exp_name.lower()
+        flag_Hela = 'hela' in version.lower()
         self.filter_edges = filter_edges or flag_Hela
         # attributes for visualization
         self.debug_visualization = debug_visualization
@@ -91,7 +91,7 @@ class CellTrackDataset(InMemoryDataset):
         if self.jump_frames > 1:
             print(f"Pay attention! using {jump_frames} jump_frames can make problem in mitosis edges!")
 
-        self.exp_name = exp_name
+        self.version = version
 
         self.all_paths = {}
         for key, mul_path in dirs_path.items():
@@ -99,14 +99,14 @@ class CellTrackDataset(InMemoryDataset):
                 continue
             if isinstance(mul_path, str):
                 root = self.dirs_path[split]
-                curr_path = osp.join(osp.join(mul_path, "processed"), self.exp_name)
+                curr_path = osp.join(osp.join(mul_path, "processed"), self.version)
                 self.all_paths[key] = curr_path
                 os.makedirs(curr_path, exist_ok=True)
             elif isinstance(mul_path, Iterable):
                 root = self.dirs_path[split][0]
                 self.all_paths[key] = []
                 for path in mul_path:
-                    curr_path = osp.join(osp.join(path, "processed"), self.exp_name)
+                    curr_path = osp.join(osp.join(path, "processed"), self.version)
                     self.all_paths[key] += [curr_path]
                     os.makedirs(curr_path, exist_ok=True)
             else:
@@ -134,7 +134,7 @@ class CellTrackDataset(InMemoryDataset):
         is_directed = 'Directed' if self.directed else 'UnDirected'
         is_norm = f'{self.which_preprocess}_normalized' if self.normalize else 'NotNormalized'
 
-        return [f"./{self.exp_name}/{is_norm}Data_{is_directed}Graph_{self.num_frames}Frames.pt"]
+        return [f"{self.version}/{is_norm}Data_{is_directed}Graph_{self.num_frames}Frames.pt"]
 
     def download(self):
         pass

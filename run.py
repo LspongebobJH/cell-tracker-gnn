@@ -27,10 +27,10 @@ log = logging.getLogger(__name__)
 ''' Remove hydra and pytorch lightning components
 [x] convert hydra to simple omegaconf
 [x] convert logging module to wandb
-[] wandb log hyperparameters correctly
-[] batch size issue
-[] data position refactor
-[] pydev issue
+[x] wandb log hyperparameters correctly
+[x] batch size issue
+[x] data position refactor
+[x] pydev issue
 '''
 
 def train(config: DictConfig) -> Optional[float]:
@@ -52,11 +52,16 @@ def train(config: DictConfig) -> Optional[float]:
 
     # Init Lightning loggers
     logger: List[Logger] = []
-    # logger.append(TensorBoardLogger(**config.logger.tensorboard))
-    logger.append(WandbLogger(**config.logger.wandb))
+
+    if config.logger.use_wandb:
+        wandb_logger = WandbLogger(**config.logger.wandb)
+        wandb_logger.experiment.config.update(
+            OmegaConf.to_container(config, resolve=True, throw_on_missing=True)
+        )
+        logger.append(wandb_logger)
     
     # Init Lightning trainer
-    trainer = Trainer(**config.trainer, callbacks=callbacks, logger=logger)
+    trainer = Trainer(**config.trainer, log_every_n_steps=1, callbacks=callbacks, logger=logger)
 
     log.info("Logging hyperparameters!")
     utils.log_hyperparameters(

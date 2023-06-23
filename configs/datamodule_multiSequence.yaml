@@ -16,7 +16,7 @@ datamodule:
         - "01"
         - "02"
     one_hot_label: ${one_hot}
-    exp_name: ${exp_name}
+    version: v1
     dim: "3D"
     overlap: 1
     jump_frames: 1

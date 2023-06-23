@@ -62,9 +62,10 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
-                "exp_name='c2'",
+                "exp_name='cell_test'",
                 "datamodule.dataset_params.dirs_path.train=['01']",
-                "datamodule.dataset_params.drop_feat=[]"
+                "datamodule.dataset_params.drop_feat=[]",
+                "loggger.use_wandb=False"
             ]
         },
 
@@ -76,7 +77,7 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "exp_name='test'",
+                "exp_name='cell_test'",
                 "datamodule.dataset_params.dirs_path.train=['02']",
                 "datamodule.train_val_test_split=[0, 100, 0]",
                 "datamodule.dataset_params.drop_feat=[]",
